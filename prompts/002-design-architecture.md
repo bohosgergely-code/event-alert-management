@@ -15,17 +15,18 @@ The AI produced:
 
 ## What I checked
 
-*(To be completed by the author. Suggested checks:)*
-- Does the data model support every feature in the plan, such as per-channel retry and "why did I not get this alert" (suppressed notifications)?
-- Is each ADR's list of alternatives real, or a straw man?
-- Is there anything claimed about an external service (USGS revision behavior, Slack responses, market API limits) that is stated as fact rather than "to verify"?
-- Is the market price-band idea sound? Walk through one ticker over a day by hand.
-- Is the transaction boundary in ADR-011 consistent with the sequence diagram?
-- Does the API outline leave a way for user A to read user B's data?
+- Reviewed the data model to assess whether it supports the planned functionality, including per-channel notification tracking, retries and suppressed notifications.
+- Checked the consistency between the architecture diagram, event processing sequence and the notification state machine.
+- Reviewed the ADRs to understand the alternatives considered and the trade-offs behind the recommended decisions.
+- Checked that external service assumptions, including USGS, Slack and market data APIs, are clearly marked as unverified where no real API request has been performed.
+- Reviewed the market price-band approach and identified its thresholds as initial values that require further validation.
+- Checked whether the API outline addresses user data isolation and prevents users from accessing each other's data.
+- Reviewed the changes to ADR-008 and ADR-009 to understand why notification uniqueness must be tracked separately for each channel.
+- Reviewed the identified security risks, particularly webhook configuration and the protection of user-controlled destinations.
 
 ## Decision
 
-*(To be completed by the author.)*
+After reviewing the architecture and decisions the core building started.
 
 ## Notes from the AI
 
