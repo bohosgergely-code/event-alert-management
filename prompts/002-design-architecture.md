@@ -2,9 +2,11 @@
 
 **Role:** Architect.
 
-## Prompt
+## Prompt (verbatim)
 
-Continue with the design phase of the plan in `docs/PLAN.md`: domain model, API outline, architecture diagram, and decision records for the main trade-offs. Present alternatives for the key choices, then recommend one.
+> Folytasd a tervezési fázissal
+
+*Gloss (AI translation):* "Continue with the design phase."
 
 ## Response (summary)
 

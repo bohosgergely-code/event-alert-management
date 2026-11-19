@@ -2,9 +2,11 @@
 
 **Role:** Interviewer and architect (AI as a product manager's counterpart and devil's advocate).
 
-## Prompt
+## Prompt (verbatim)
 
-Continue with the framing phase of the plan in `docs/PLAN.md`: write down the assumptions behind the vague brief, the scope and non-goals, and the first architecture decision records.
+> Folytasd a keretezési fázissal
+
+*Gloss (AI translation):* "Continue with the framing phase." (The phases are those of `docs/PLAN.md`.)
 
 ## Response (summary)
 

@@ -19,7 +19,7 @@ A working alerting system was built end to end: users define rules, events from 
 | Tests pass, including at least one integration test | Done | 418 backend tests (plus 5 that need real services and are skipped by default) and 94 frontend tests; a fresh clone reproduces them, and the GitHub Actions workflow passed on the final commits |
 | REVIEW_LOG has at least eight entries, at least three AI mistakes corrected | Done | 38 entries, more than a dozen are mistakes in AI output that were found and fixed (summary table at the top of the log) |
 | DECISIONS has at least five records; README states assumptions and non-goals | Done | 20 records; README and ASSUMPTIONS |
-| Prompt history and evidence in the repository, a commit per milestone | **Partly.** Evidence and commits: done. Prompt history: a file per exchange with a summary of the prompt and result. The author's own wording is still to be added (see the note in `prompts/README.md`). | `prompts/`, `git log` |
+| Prompt history and evidence in the repository, a commit per milestone | Done | Every prompt the author sent, word for word (Hungarian ones with an English gloss), the prompts given to the three independent reviewers, and a summary of each result in `prompts/`. The AI's replies are summarised, not transcribed; the exported session is the complete record. Evidence in `evidence/`, commits in `git log` |
 
 ## What changed from the plan, and why
 

@@ -2,26 +2,27 @@
 
 **Role:** Implementer, then reviewer of its own output through a real browser.
 
-## Prompt
+## Prompt (verbatim)
 
-There is no need for user e-mail validation at this point. Continue with the Angular frontend.
+> There is no need for user e-mail validation at this point. Continue with the Angular frontend.
 
 ## Response (summary)
 
-- Scaffolded Angular 22 (pinned), generated API types from the OpenAPI description, built the user screens (sign-in, channels, rules with presets and preview, history) and the admin screens (overview, deliveries with attempts and retry, events with test event creation, sources, channel types).
-- 60 unit and component tests, plus a real-browser journey against the real stack.
+Scaffolded Angular 22 (pinned), generated API types from the OpenAPI description, built the user screens (sign-in, channels, rules with presets and preview, history) and the admin screens (overview, deliveries with attempts and retry, events with test event creation, sources, channel types). Unit and component tests, plus a real-browser journey against the real stack.
 
-## What I checked
+## What was checked
+
+*Written by the AI from the review log and the evidence folder. The author did not write this section.*
 
 - Mutation checks on the frontend logic: 10 of 10 caught.
-- Ran a real browser through the whole product three times in a row. Opened every screenshot and read it.
+- Ran a real browser through the whole product three times in a row; opened every screenshot and read it.
 - Found and fixed product problems that only the browser journey exposed (R-022 stale confirmation, R-023 screen that never refreshed, R-028 wording).
-- Found two problems that were mine, not the app's (R-024 API not started, R-021 versions not really pinned), and one that was the rate limiter doing its job (R-025).
+- Found two problems that were the AI's own, not the app's (R-024 API not started, R-021 versions not really pinned), and one that was the rate limiter doing its job (R-025).
 - Left one unexplained, harmless log line open (R-026).
 
 ## Decision
 
-Email verification was dropped from scope at the author's request (R-019 stays listed as a known limit in the README). Frontend accepted as the user and admin interface.
+The author's next instruction, in their own words: **"Continue with the third channel"**. Email verification stayed out of scope, as decided in the prompt above.
 
 ## Notes from the AI
 

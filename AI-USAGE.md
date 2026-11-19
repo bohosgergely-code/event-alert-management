@@ -77,4 +77,4 @@ The plan promised an independent reviewer in a fresh context, and the first vers
 
 ## About the prompt history
 
-`prompts/` has one file per exchange: the role, the prompt, a summary of what the AI produced, what was checked and the decision. They are summaries, not transcripts. The author's own words for each prompt and decision are to be added there, and the full session export is the complete record.
+`prompts/` has one file per exchange: the author's prompt word for word (Hungarian ones with an English gloss, marked as a translation), a summary of what the AI produced, what was checked, and the decision, quoted in the author's own words where possible. It also holds the prompts the AI gave to the three independent reviewers. The AI's own replies are summarised, not transcribed; the exported session is the complete record. Sections the AI wrote say so.
