@@ -159,7 +159,10 @@ public class DispatcherTests : IDisposable
             db.ChannelConfigs.ExecuteUpdate(s => s.SetProperty(c => c.IsEnabled, false));
         }
         await Run();
-        Assert.Equal(NotificationStatus.Failed, Load(id).Status);
+        var n = Load(id);
+        Assert.Equal(NotificationStatus.Suppressed, n.Status); // a choice someone made, not a delivery fault
+        Assert.Contains("disabled", n.SuppressedReason);
+        Assert.Empty(n.Attempts);
         Assert.Empty(_h.Channel.Sent);
     }
 
@@ -289,7 +292,7 @@ public class ChannelTypeSwitchTests : IDisposable
     }
 
     [Fact]
-    public async Task Type_switched_off_after_matching_is_not_sent_and_can_be_retried_once_switched_on()
+    public async Task Type_switched_off_after_matching_is_held_back_and_can_be_sent_on_request_once_switched_on()
     {
         await Setup();
         using (var db = _h.NewDb()) await _h.Ingestion(db).IngestAsync(_h.SimSource(db), new[] { Harness.NewsItem("a") }, null, default);
@@ -300,11 +303,14 @@ public class ChannelTypeSwitchTests : IDisposable
 
         using (var db = _h.NewDb())
         {
-            Assert.Equal(NotificationStatus.Failed, db.Notifications.Single().Status);
+            var n = db.Notifications.Single();
+            Assert.Equal(NotificationStatus.Suppressed, n.Status);          // same status and wording as ingestion uses
+            Assert.Contains("administrator", n.SuppressedReason);
             db.ChannelTypeSettings.ExecuteDelete();
-            Assert.True(await new EventAlertManagement.Infrastructure.Dispatch.NotificationRetryService(db, _h.Clock).RetryAsync(db.Notifications.Single().Id, default));
+            Assert.True(await new EventAlertManagement.Infrastructure.Dispatch.NotificationRetryService(db, _h.Clock).RetryAsync(n.Id, default));
         }
         using (var db = _h.NewDb()) await _h.Dispatcher(db).RunOnceAsync(10, default);
         Assert.Single(_h.Channel.Sent);
     }
+
 }

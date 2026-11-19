@@ -46,6 +46,9 @@ public class AlertRule
     public int CooldownSeconds { get; set; }
     public bool IsEnabled { get; set; } = true;
     public DateTime? LastNotifiedAt { get; set; }
+
+    /// <summary>Severity of the event that started the current cooldown window. A more severe event is not held back by it.</summary>
+    public int? LastNotifiedSeverity { get; set; }
     public List<ChannelConfig> Channels { get; set; } = new();
 }
 

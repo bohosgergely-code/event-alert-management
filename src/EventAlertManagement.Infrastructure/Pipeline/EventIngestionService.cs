@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using EventAlertManagement.Core.Contracts;
 using EventAlertManagement.Core.Domain;
 using EventAlertManagement.Core.Matching;
@@ -16,7 +17,21 @@ public sealed record IngestResult(int NewEvents, int Duplicates, int Notificatio
 public sealed class EventIngestionService(
     AppDbContext db, IEventMatcher matcher, IClock clock, ILogger<EventIngestionService> log)
 {
+    // One ingest per source at a time inside this process. Without it, an admin pressing "Check now" while the
+    // background poll runs makes both read "not stored yet" and one of them fails on the unique key.
+    // (Several instances would need the same guarantee from the database.)
+    private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> SourceLocks = new();
+
     public async Task<IngestResult> IngestAsync(
+        Source source, IReadOnlyList<NormalizedEvent> items, string? newCursor, CancellationToken ct)
+    {
+        var gate = SourceLocks.GetOrAdd(source.Id, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
+        try { return await IngestLockedAsync(source, items, newCursor, ct); }
+        finally { gate.Release(); }
+    }
+
+    private async Task<IngestResult> IngestLockedAsync(
         Source source, IReadOnlyList<NormalizedEvent> items, string? newCursor, CancellationToken ct)
     {
         var now = clock.UtcNow;
@@ -50,11 +65,13 @@ public sealed class EventIngestionService(
             var disabledTypes = (await db.ChannelTypeSettings.Where(t => !t.IsEnabled).Select(t => t.Type).ToListAsync(ct))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var ev in fresh)
+            // Most severe first: when several events arrive together and a cooldown applies, the one that gets through
+            // must be the one that matters most, not merely the one that happened first.
+            foreach (var ev in fresh.OrderByDescending(e => e.Severity).ThenBy(e => e.OccurredAt))
             {
                 foreach (var rule in rules.Where(r => matcher.Matches(r, ev)))
                 {
-                    var inCooldown = CooldownPolicy.IsInCooldown(rule, now, out var until);
+                    var inCooldown = CooldownPolicy.IsInCooldown(rule, now, out var until, ev.Severity);
                     var queuedForRule = false;
 
                     foreach (var channel in rule.Channels)
@@ -91,7 +108,7 @@ public sealed class EventIngestionService(
                     }
 
                     // Starts the cooldown window for the events that follow, including later ones in this batch.
-                    if (queuedForRule) rule.LastNotifiedAt = now;
+                    if (queuedForRule) { rule.LastNotifiedAt = now; rule.LastNotifiedSeverity = ev.Severity; }
                 }
             }
         }

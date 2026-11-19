@@ -5,17 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventAlertManagement.Infrastructure.Dispatch;
 
-/// <summary>Manual retry used by admins. Only failed notifications can be retried.</summary>
+/// <summary>Manual retry used by admins. Failed notifications can be retried, and suppressed ones can be sent on request.</summary>
 public sealed class NotificationRetryService(AppDbContext db, IClock clock)
 {
     public async Task<bool> RetryAsync(Guid notificationId, CancellationToken ct)
     {
         var now = clock.UtcNow;
         var rows = await db.Notifications
-            .Where(n => n.Id == notificationId && n.Status == NotificationStatus.Failed)
+            .Where(n => n.Id == notificationId && (n.Status == NotificationStatus.Failed || n.Status == NotificationStatus.Suppressed))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(n => n.Status, NotificationStatus.Pending)
                 .SetProperty(n => n.AttemptCount, 0)
+                .SetProperty(n => n.SuppressedReason, (string?)null)
                 .SetProperty(n => n.NextAttemptAt, now), ct);
         return rows == 1;
     }

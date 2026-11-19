@@ -13,7 +13,7 @@ namespace EventAlertManagement.Api.Controllers;
 [ApiController]
 [Route("api/rules")]
 [Authorize(Roles = Roles.User)]
-public class RulesController(AppDbContext db, RuleBuilder builder, IEventMatcher matcher) : ControllerBase
+public class RulesController(AppDbContext db, RuleBuilder builder, IEventMatcher matcher, EventAlertManagement.Core.Contracts.IClock clock) : ControllerBase
 {
     private IQueryable<AlertRule> Own() =>
         db.AlertRules.Include(r => r.Channels).Where(r => r.UserId == User.UserId());
@@ -84,7 +84,7 @@ public class RulesController(AppDbContext db, RuleBuilder builder, IEventMatcher
         var built = await builder.BuildAsync(request, User.UserId(), requireChannels: false, ct);
         if (built.Rule is null) return Invalid("rule", built.Problems);
 
-        var since = DateTime.UtcNow.AddDays(-7);
+        var since = clock.UtcNow.AddDays(-7);
         var recent = await db.Events.AsNoTracking()
             .Where(e => e.Category == built.Rule.Category && e.OccurredAt >= since)
             .OrderByDescending(e => e.OccurredAt).Take(500).ToListAsync(ct);

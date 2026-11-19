@@ -38,7 +38,13 @@ public sealed class NotificationDispatcher(
         {
             ct.ThrowIfCancellationRequested();
             if (!await TryClaimAsync(id, ct)) continue; // Someone else took it.
-            await DeliverAsync(id, ct);
+            try { await DeliverAsync(id, ct); }
+            catch (DbUpdateException ex)
+            {
+                // The rule or channel was deleted while this was being sent, so there is nothing left to record on.
+                // The rest of the batch must not wait for the next cycle because of that.
+                log.LogWarning(ex, "Notification {Id} disappeared while it was being delivered", id);
+            }
             handled++;
         }
         return handled;
@@ -64,9 +70,23 @@ public sealed class NotificationDispatcher(
         db.ChangeTracker.Clear();
         var n = await db.Notifications
             .Include(x => x.Event).Include(x => x.ChannelConfig).Include(x => x.Rule)
-            .FirstAsync(x => x.Id == id, ct);
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (n is null) return; // deleted after it was claimed
 
-        var attemptNumber = n.AttemptCount + 1;
+        // Decide with the state of the rule and channel NOW, not the state when the alert was queued.
+        var suppression = await SuppressionReasonAsync(n, ct);
+        if (suppression is not null)
+        {
+            n.Status = NotificationStatus.Suppressed;
+            n.SuppressedReason = suppression;
+            n.LeaseUntil = null;
+            n.NextAttemptAt = null;
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        // Attempt numbers keep counting across manual retries, so history never shows the same number twice.
+        var attemptNumber = (await db.DeliveryAttempts.Where(a => a.NotificationId == id).MaxAsync(a => (int?)a.AttemptNumber, ct) ?? 0) + 1;
         var startedAt = clock.UtcNow;
         var sw = Stopwatch.StartNew();
         ChannelSendResult result;
@@ -88,7 +108,7 @@ public sealed class NotificationDispatcher(
         sw.Stop();
 
         var now = clock.UtcNow;
-        n.AttemptCount = attemptNumber;
+        n.AttemptCount += 1; // attempts in the current round; this is what the retry limit counts
         n.LeaseUntil = null;
         // Added explicitly: a client-generated GUID key on an entity reached through a tracked collection
         // is otherwise treated as existing (Modified) and the save fails with a concurrency error.
@@ -115,7 +135,7 @@ public sealed class NotificationDispatcher(
                 n.NextAttemptAt = null;
                 break;
             case ChannelSendOutcome.TransientFailure:
-                var next = RetryPolicy.NextAttemptAt(_retry, attemptNumber, now);
+                var next = RetryPolicy.NextAttemptAt(_retry, n.AttemptCount, now);
                 n.Status = next is null ? NotificationStatus.Failed : NotificationStatus.Retrying;
                 n.NextAttemptAt = next;
                 break;
@@ -128,14 +148,23 @@ public sealed class NotificationDispatcher(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task<ChannelSendResult> SendAsync(Notification n, CancellationToken ct)
+    /// <summary>Why this alert should not be sent after all, or null. These are choices someone made, not delivery failures.</summary>
+    private async Task<string?> SuppressionReasonAsync(Notification n, CancellationToken ct)
     {
+        if (n.Rule is { IsEnabled: false }) return "The rule was switched off before this alert was delivered.";
         var config = n.ChannelConfig!;
-        if (!config.IsEnabled) return ChannelSendResult.Permanent("Channel is disabled.");
+        if (!config.IsEnabled) return "Channel is disabled.";
 
         // Compared in memory and ignoring case, exactly like the channel registry and ingestion do (the table is tiny).
         var switchedOff = await db.ChannelTypeSettings.Where(t => !t.IsEnabled).Select(t => t.Type).ToListAsync(ct);
-        if (switchedOff.Contains(config.Type, StringComparer.OrdinalIgnoreCase)) return ChannelSendResult.Permanent($"{config.Type} notifications are switched off by an administrator.");
+        return switchedOff.Contains(config.Type, StringComparer.OrdinalIgnoreCase)
+            ? $"{config.Type} notifications are switched off by an administrator."
+            : null;
+    }
+
+    private async Task<ChannelSendResult> SendAsync(Notification n, CancellationToken ct)
+    {
+        var config = n.ChannelConfig!;
 
         var channel = registry.Find(config.Type);
         if (channel is null) return ChannelSendResult.Permanent($"Unknown channel type '{config.Type}'.");
