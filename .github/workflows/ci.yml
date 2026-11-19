@@ -1,7 +1,6 @@
 name: CI
 
-# The same commands that tools/verify.sh runs locally.
-# Note: written without being able to execute GitHub Actions from the build environment, so the first run is the real test.
+# The same commands that tools/verify.sh runs locally. The first run on GitHub passed.
 on:
   push:
   pull_request:

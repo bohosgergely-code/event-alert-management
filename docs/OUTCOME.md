@@ -16,7 +16,7 @@ A working alerting system was built end to end: users define rules, events from 
 | Admin shows events, deliveries with status, source health, can inject an event, and is closed without credentials | Done | route-by-route security test; `evidence/005-api-verification.md` |
 | A third channel exists and was added without changing core code | Done, with a diff as proof | `evidence/007-third-channel.md`, REVIEW_LOG R-029 |
 | At least one real source (USGS) works with live data | Done | `fixtures/usgs/`, live test, REVIEW_LOG R-010 |
-| Tests pass, including at least one integration test | Done | 383 backend tests (plus 5 that need real services and are skipped by default) and 69 frontend tests; a fresh clone reproduces them |
+| Tests pass, including at least one integration test | Done | 383 backend tests (plus 5 that need real services and are skipped by default) and 69 frontend tests; a fresh clone reproduces them, and the GitHub Actions workflow passed on the final commits |
 | REVIEW_LOG has at least eight entries, at least three AI mistakes corrected | Done | 34 entries, more than a dozen are mistakes in AI output that were found and fixed (summary table at the top of the log) |
 | DECISIONS has at least five records; README states assumptions and non-goals | Done | 20 records; README and ASSUMPTIONS |
 | Prompt history and evidence in the repository, a commit per milestone | **Partly.** Evidence and commits: done. Prompt history: a file per exchange with a summary of the prompt and result. The author's own wording is still to be added (see the note in `prompts/README.md`). | `prompts/`, `git log` |
