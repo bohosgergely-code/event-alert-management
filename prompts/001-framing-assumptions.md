@@ -14,15 +14,14 @@ The AI produced:
 
 ## What I checked
 
-*(To be completed by the author after reading the documents. Suggested checks:)*
-- Does each assumption have a way of being disproved, or is it just a statement?
-- Are the source hypotheses in ASSUMPTIONS.md section 7 marked as unverified? (They are, and must be tested with real requests.)
-- Do the ADRs name real alternatives and real costs, or are they one-sided?
-- Is anything claimed that the AI could not know (for example exact API field names)?
+- Does each assumption have a way of being disproved, or is it just a statement? Reviewed the assumptions and confirmed that each one includes a validation method or a way to identify whether it is incorrect.
+- Are the source hypotheses in ASSUMPTIONS.md section 7 marked as unverified? (They are, and must be tested with real requests.) Yes. The source-related assumptions are explicitly marked as unverified.
+- Do the ADRs name real alternatives and real costs, or are they one-sided? Reviewed the ADRs to ensure that alternative approaches and their trade-offs are documented. 
+- Is anything claimed that the AI could not know (for example exact API field names)? Reviewed the documentation for unsupported technical claims. External API details that have not been verified are identified as assumptions or items requiring validation. No unverified API field names should be treated as confirmed facts.
 
 ## Decision
 
-*(To be completed by the author: what was accepted, changed or rejected.)*
+The assumptions and decisions were accepted.
 
 ## Notes from the AI
 
