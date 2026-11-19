@@ -1,5 +1,7 @@
 # Architecture and Design
 
+> **Note:** this is the design made *before* building. Parts have been superseded by what was built and by the independent review (cooldown escalation, suppressed alerts at send time, the webhook channel, new limits). For the system as it actually is, read [DESIGN.md](DESIGN.md).
+
 This document describes how EventAlertManagement is structured: the pieces, how data flows through them, the data model, the API, and the main design choices. It builds on [PLAN.md](PLAN.md) and [ASSUMPTIONS.md](ASSUMPTIONS.md). Decisions with real trade-offs are recorded in [DECISIONS.md](../DECISIONS.md), and each section below points to the relevant ones.
 
 Everything here is a design, not a description of finished code. Where a detail depends on a real service behaving as we expect, it is marked **to verify**.

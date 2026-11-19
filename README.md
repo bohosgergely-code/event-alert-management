@@ -16,13 +16,14 @@ It was built from a deliberately vague product brief (*"notify users when someth
 
 ## Start here (for reviewers)
 
-1. [docs/OUTCOME.md](docs/OUTCOME.md): the plan against what happened, the checklist, what is open.
-2. [AI-USAGE.md](AI-USAGE.md): how the AI was directed, what it got wrong, where I still fall short of the plan.
-3. [evidence/independent-review/](evidence/independent-review/README.md): an independent fresh-context review (three reviewers, 40 findings, what was fixed and what was not).
-4. [REVIEW_LOG.md](REVIEW_LOG.md): 38 entries, summary table first.
-5. [DECISIONS.md](DECISIONS.md): 21 decisions with the options that were rejected.
-6. [docs/PLAN.md](docs/PLAN.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the plan, the assumptions behind the brief, the design.
-7. [evidence/](evidence/) (tables, real messages, screenshots) and [prompts/](prompts/) (one file per exchange).
+1. [docs/DESIGN.md](docs/DESIGN.md): the design document of the task and of the code as built (architecture, data model, flows, channels, API, security, verification).
+2. [docs/OUTCOME.md](docs/OUTCOME.md): the plan against what happened, the checklist, what is open.
+3. [AI-USAGE.md](AI-USAGE.md): how the AI was directed, what it got wrong, where I still fall short of the plan.
+4. [evidence/independent-review/](evidence/independent-review/README.md): an independent fresh-context review (three reviewers, 40 findings, what was fixed and what was not).
+5. [REVIEW_LOG.md](REVIEW_LOG.md): 38 entries, summary table first.
+6. [DECISIONS.md](DECISIONS.md): 21 decisions with the options that were rejected.
+7. [docs/PLAN.md](docs/PLAN.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the plan, the assumptions behind the brief, the design.
+8. [evidence/](evidence/) (tables, real messages, screenshots) and [prompts/](prompts/) (one file per exchange).
 
 ## Run it
 

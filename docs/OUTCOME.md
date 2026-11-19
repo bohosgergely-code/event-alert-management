@@ -69,6 +69,7 @@ A working alerting system was built end to end: users define rules, events from 
 
 ## Where to look
 
+0. [DESIGN.md](DESIGN.md): the design of the task and of the code as built.
 1. [README.md](../README.md): what it is, how to run it, limits.
 2. [AI-USAGE.md](../AI-USAGE.md): how the AI was directed and where it was wrong.
 3. [REVIEW_LOG.md](../REVIEW_LOG.md): the mistakes, checks and rejected output, with a summary table at the top.

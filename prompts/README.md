@@ -32,3 +32,4 @@ Rejected attempts and failed approaches stay in the history. They are part of th
 | [008-final-pass.md](008-final-pass.md) | "Skip the sources, do the final pass" | Final pass over the repository |
 | [009-independent-review.md](009-independent-review.md) | "Do the independent fresh-context review" | Three independent reviewers, with their prompts |
 | [010-prompt-history.md](010-prompt-history.md) | "Fill in the prompt files with my own wording" | This record |
+| [011-design-document.md](011-design-document.md) | "kreálj egy design doksit a feladatból és a kreált kódból" (Hungarian: create a design document from the task and the code) | The as-built design document |

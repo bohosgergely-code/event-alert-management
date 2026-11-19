@@ -22,7 +22,7 @@
 
 ## Decision
 
-Pending: the author reviews these files. If personal review notes should be added, they belong in the "Decision" part of the relevant file, written by the author.
+The author's next instruction, in their own words: **"kreálj egy design doksit a feladatból és a kreált kódból"** (create a design document from the task and the created code), recorded in `011`. If personal review notes should be added to the prompt files, they belong in the "Decision" part of the relevant file, written by the author.
 
 ## Notes from the AI
 
