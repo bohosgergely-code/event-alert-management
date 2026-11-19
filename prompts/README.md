@@ -25,3 +25,4 @@ Rejected and failed attempts stay in the history. They are part of the evidence.
 | [004-real-source-verification.md](004-real-source-verification.md) | Verification against real services, USGS source |
 | [005-api-layer.md](005-api-layer.md) | API layer: auth, channels, rules, admin, verification |
 | [006-angular-frontend.md](006-angular-frontend.md) | Angular frontend, real-browser journey |
+| [007-third-channel.md](007-third-channel.md) | Third channel, SSRF protection, extensibility proof |

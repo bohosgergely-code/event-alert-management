@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10));
         services.AddSingleton<INotificationChannel, EmailChannel>();
         services.AddSingleton<INotificationChannel, SlackChannel>();
+        services.AddWebhookChannel(config); // third channel: one line here, everything else lives in WebhookChannel.cs
         services.AddSingleton<IChannelRegistry, ChannelRegistry>();
 
         // Sources

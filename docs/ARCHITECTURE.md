@@ -274,7 +274,7 @@ Rendering is internal to each channel (it is not part of the contract), because 
 |---|---|
 | **Email** | SMTP via MailKit. Plain text and HTML body, both built from **escaped** event text. Settings: destination address. Server settings are global configuration, not per user. |
 | **Slack** | HTTP POST of JSON to an Incoming Webhook. Text is escaped following Slack's rules for `&`, `<`, `>`. The webhook URL must be HTTPS and on Slack's webhook host. **To verify:** payload format and success response against Slack's documentation and a real test webhook. |
-| **Webhook** (added late) | Generic JSON POST to a user-provided URL, with a signature header. Added without touching core code; the diff is the evidence. Needs the same SSRF protections as Slack, plus blocking of private address ranges. |
+| **Webhook** (added last, as the extensibility proof) | Signed JSON POST to a user-provided https URL (`X-EventAlert-Signature: sha256=` over timestamp and body, secret chosen by the user). The destination is fully user-controlled, so private and internal addresses are refused when typed and again at connect time, redirects are not followed. Three new files and one added line; see ADR-019 and `evidence/007-third-channel.md`. |
 
 **Failure classification** (drives retries):
 - *Transient*: network error, timeout, HTTP 429 or 5xx, SMTP temporary failure. Retried with backoff.

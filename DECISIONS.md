@@ -371,3 +371,33 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 **Consequences.**
 - A token in browser storage can be read by any script that runs on the page. There is no user-supplied HTML anywhere in the application (Angular escapes all bound text), which lowers the risk, but it is a known limit of this scope.
 - No component library means the look is plain. Accessibility basics are covered (labels, focus outlines, roles for alerts, colour contrast in both colour schemes) but not audited.
+
+---
+
+## ADR-019: Webhook channel, and how a destination the user fully controls is made safe
+
+**Status:** Accepted
+
+**Context.** The third channel posts to a URL the user types. Unlike Slack, where the host is fixed to Slack's own, here any address is possible, so the server could be pointed at things only it can reach: cloud metadata services (`169.254.169.254`), internal admin pages, databases. This is server-side request forgery (SSRF). The channel also has to let the receiver check that a message really came from us.
+
+**Options for the destination.**
+1. Check the URL text only when it is saved.
+2. Also resolve the host name when it is saved and check the address.
+3. Check the address that is actually used at the moment the connection is made, and refuse if any resolved address is internal.
+
+**Decision.** Option 3, plus the cheap early checks of option 1 for a clear message to the user.
+- Only `https`, no user name or password in the URL, no internal-looking names (`localhost`, single-label names, `.local`, `.internal`, ...).
+- Addresses written as numbers are looked at in their real form: .NET turns `2130706433`, `0x7f.0.0.1`, `127.1` and `0177.0.0.1` into `127.0.0.1` before the check sees them.
+- The decisive check is in the connection step: resolve, refuse if **any** address is internal, then connect to the address that was checked. A name that answered with a public address when saved and an internal one later (DNS rebinding) is therefore still refused.
+- IPv4 uses a block list of internal and reserved ranges. IPv6 uses an allow list (only global unicast), with the reserved blocks inside it removed. IPv4 hidden inside IPv6 (`::ffff:127.0.0.1`), 6to4 and NAT64 forms are refused.
+- Redirects are never followed and connections are not kept longer than two minutes, so addresses are checked again.
+- A blocked address is a permanent failure: no retries against an internal target.
+
+**Options for proving origin.** Every message carries `X-EventAlert-Timestamp` and `X-EventAlert-Signature: sha256=<hex>`, where the hex is HMAC-SHA256 over `timestamp + "." + body` with a secret the user chooses (at least 16 characters, required). The timestamp lets the receiver reject old messages. A receiver recomputes the value and compares.
+
+**Consequences.**
+- Requests go straight from this application, not through a proxy, by default. A proxy would make the connection itself and the address check could no longer see the real destination. `Webhook:UseSystemProxy=true` is an explicit opt-in that says protection then depends on the proxy.
+- The signing secret has to be readable by the server (it signs every message), so it is stored encrypted (ADR-014), not hashed.
+- The secret and the path of the URL are never shown after saving (only the host).
+- A destination that is reachable only from inside a company network cannot be used. That is the point, and also a limit.
+- The live path over real TLS to a public server has not been exercised in this environment (see REVIEW_LOG R-031).

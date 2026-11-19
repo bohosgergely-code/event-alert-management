@@ -17,7 +17,7 @@ This repository is built as a worked example of taking a vague product brief to 
 | RSS news and market sources | Not started (hosts were not reachable when checked) |
 | Web API: sign-in, channels, rules (presets, preview), notification history, admin area | Done. 24 endpoints, OpenAPI in `docs/openapi.json`, verified end to end |
 | Angular user and admin interface | Done. 60 tests, real-browser journey passed three times, screenshots in `evidence/e2e/` |
-| Third channel (generic webhook) | Not started |
+| Third channel (generic webhook) | Done, with evidence that the core was not touched (`evidence/007-third-channel.md`). **Not yet verified over real TLS to a public server** (R-031) |
 
 ## Run the application
 
@@ -56,6 +56,7 @@ EAM_SMTP_TEST_PORT=1025 EAM_LIVE_TESTS=1 dotnet test
 
 ## Known limits
 
+- **Webhook channel:** destinations inside a private network cannot be used (by design, ADR-019). Requests are sent directly, not through a proxy, unless `Webhook:UseSystemProxy` is set, in which case address protection depends on the proxy.
 - **The session token is kept in the browser's session storage** (cleared on sign-out and when the tab closes). Any script running on the page could read it. The application has no user-supplied HTML, but this is a known limit of this scope.
 - **Email addresses are not verified.** A user can register any address as an email channel, so the system could be used to send unwanted mail to third parties. Limits per user, a test rate limit and an admin switch reduce but do not remove the risk. The proper fix is a confirmation link before a channel is enabled (see REVIEW_LOG R-019).
 

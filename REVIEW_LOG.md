@@ -194,3 +194,31 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 
 - **Observation:** The rule preview read "Of the last 10 natural disasters events".
 - **Decision:** Replaced the label with a proper noun phrase per category. Lesson: passing assertions say nothing about wording, so every screenshot was opened and read.
+
+## R-029 – The extensibility claim, checked as a diff
+
+- **Claim (ADR-004, ARCHITECTURE section 6):** a new channel is one class and one registration, and the core does not change.
+- **Check:** Built the third channel (generic webhook) last, on purpose, then listed exactly what changed (`evidence/007-third-channel.md`).
+- **Result:** Three new production files (the channel, an address policy, a connection guard) and **one added line** in the composition root. No change in Core, ingestion, dispatcher, persistence, the API, the OpenAPI document or the Angular app. The API offered the new type to users and to admins by itself, and the existing screen accepted its settings through the generic JSON box in a real browser.
+- **Decision:** Claim accepted, with evidence. The remaining rough edge is user experience (a JSON box instead of two fields), not structure.
+
+## R-030 – "Is this address public?" is easy to get subtly wrong
+
+- **AI output:** The first policy was written from memory of the usual ranges.
+- **Check:** Compared every address in a table against Python's `ipaddress` module as an independent opinion.
+- **Result:** They agreed on everything except two cases where **Python is the unsafe one**: it calls multicast (`224.0.0.1`) and a NAT64 address that embeds `127.0.0.1` (`64:ff9b::7f00:1`) "global". A policy copied from a standard-library helper would have let the NAT64 form through. The policy was made stricter (IPv6 allow list, reserved blocks removed) and both cases are tests.
+- **Second finding:** checking a host name only when the settings are saved is not enough, because the name can later answer with an internal address (DNS rebinding). The decisive check moved to the moment of connecting and is tested with real sockets: a server on the loopback address never sees a connection when the name resolves to it, including when public and internal addresses are mixed.
+
+## R-031 – Not verified: delivery over real TLS to a public server (OPEN)
+
+- **What is verified:** signing against the RFC 4231 test vector and an independent Python calculation; the request format and failure handling against a stub; the address guard with real sockets (blocked cases and the allowed case, including the original host name in the request); the whole ingestion-to-delivery path with only the wire replaced.
+- **What is not:** a real HTTPS request to a public server. This environment's network goes through a mandatory proxy, and the channel deliberately does not use proxies (ADR-019). An early idea to test through a direct connection was dropped, because bypassing the proxy is not allowed here, and I did not call third-party echo services without being asked to.
+- **Status:** Open. Anyone with a public test endpoint can run one real send from the Channels screen ("Send test") and look at the signature on the receiving side.
+
+## R-032 – Small things the build and a screenshot caught
+
+- A .NET 9 method (`Convert.ToHexStringLower`) was used in a .NET 8 project. Caught by the compiler.
+- Mutation checks: 16 deliberate bugs in the policy, the guard, URL checks, signing, status handling and handler settings. All 16 caught (`evidence/007-third-channel.md`).
+- The handler settings (no redirects, no proxy, guard attached) were first untested, so a wrong setting would have passed everything. Moved into a method and pinned by tests; mutation W10 and W15 then fail as they should.
+- My browser script assumed the form still had its previous type selected (script error, not an app error).
+- A screenshot showed the JSON box still holding the secret after a successful add. Fixed in the next commit.
