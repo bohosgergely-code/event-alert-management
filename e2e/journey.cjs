@@ -73,26 +73,30 @@ const log = (m) => console.log(`  ✓ ${m}`);
   assert.ok(!masked.includes(`inbox-${stamp}`), 'the real address must not be shown');
   log('email channel added and shown masked');
 
-  // ---- the third channel appears in the existing screen with no frontend change (generic JSON settings box) ----
+  // ---- the third channel: a dedicated form (it also worked before this form existed, through the generic JSON box) ----
   await page.getByLabel('Type').selectOption('Webhook');
-  await page.getByLabel('Settings (JSON)').waitFor();
+  await page.getByLabel('Webhook URL').waitFor();
+  assert.equal(await page.getByLabel('Signing secret').getAttribute('type'), 'password', 'the secret is typed into a masked field');
   await page.getByLabel('Name').fill('Internal hook');
-  await page.getByLabel('Settings (JSON)').fill(JSON.stringify({ url: 'https://169.254.169.254/latest/meta-data/', secret: '0123456789abcdef' }));
+  await page.getByLabel('Webhook URL').fill('https://169.254.169.254/latest/meta-data/');
+  await page.getByLabel('Signing secret').fill('a-long-enough-secret-123');
   await page.getByRole('button', { name: 'Add channel' }).click();
   await page.getByRole('alert').getByText(/private or internal/).waitFor();
+  assert.equal(await page.getByLabel('Webhook URL').inputValue(), 'https://169.254.169.254/latest/meta-data/', 'what was typed is kept so it can be corrected');
   await shot('webhook-internal-refused');
-  log('a webhook aimed at the cloud metadata address is refused');
+  log('a webhook aimed at the cloud metadata address is refused, and the form keeps what was typed');
 
   await page.getByLabel('Name').fill('Team hook');
-  await page.getByLabel('Settings (JSON)').fill(JSON.stringify({ url: 'https://hooks.example.com/in/TOKEN-ABC', secret: 'a-long-enough-secret-123' }));
+  await page.getByLabel('Webhook URL').fill('https://hooks.example.com/in/TOKEN-ABC');
   await page.getByRole('button', { name: 'Add channel' }).click();
   const hook = page.locator('tbody tr').filter({ hasText: 'Team hook' });
   await hook.waitFor();
   const hookText = await text(hook);
   assert.ok(hookText.includes('https://hooks.example.com/… (signed)'), `masked webhook expected, got: ${hookText}`);
   assert.ok(!hookText.includes('TOKEN-ABC') && !hookText.includes('a-long-enough-secret'), 'neither the path token nor the secret may be shown');
+  assert.equal(await page.getByLabel('Signing secret').inputValue(), '', 'the secret is gone from the form after saving');
   await shot('webhook-added');
-  log('the new channel type works in the existing screen, masked, with no frontend change');
+  log('the webhook is added, shown masked, and the secret does not linger in the form');
 
   // a second channel the mail server will refuse permanently (for the failure path)
   await page.getByLabel('Type').selectOption('Email');

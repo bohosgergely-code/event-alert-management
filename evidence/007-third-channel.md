@@ -13,7 +13,7 @@ What changed in the repository for the third channel (production code only):
 
 Checked with `git diff --name-only HEAD` over these paths, which printed nothing: `src/EventAlertManagement.Core`, `Infrastructure/Pipeline`, `Infrastructure/Dispatch`, `Infrastructure/Persistence`, `src/EventAlertManagement.Api`, `src/EventAlertManagement.Web`, `docs/openapi.json`.
 
-So the channel contract, matching, ingestion, outbox, dispatcher, retry rules, API and Angular app were not touched. The API listed the new type for users (`/api/channels/types`) and admins (`/api/admin/channel-types`, including the global off switch) without any change, and the existing Angular screen accepted its settings through the generic JSON box (`evidence/e2e/05-webhook-internal-refused.png`, `06-webhook-added.png`).
+So the channel contract, matching, ingestion, outbox, dispatcher, retry rules, API and Angular app were not touched. The API listed the new type for users (`/api/channels/types`) and admins (`/api/admin/channel-types`, including the global off switch) without any change, and the existing Angular screen accepted its settings through the generic JSON box (`evidence/generic-ui-proof/webhook-internal-refused.png`, `evidence/generic-ui-proof/webhook-added.png`, kept as a fixed copy because a later commit replaces the JSON box with a proper form).
 
 ## Tests
 

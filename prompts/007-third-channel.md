@@ -23,6 +23,10 @@ Continue with the third channel.
 
 Extensibility claim accepted with evidence. One thing is explicitly not verified: delivery over real TLS to a public server (R-031).
 
+## Follow-up commit
+
+After the proof, a proper two-field form replaced the JSON box for this channel (separate commit, R-033), and the secret is cleared from the form after saving.
+
 ## Notes from the AI
 
 - An idea to test through a direct network connection was blocked, rightly: the environment requires its proxy and bypassing it is not allowed. It was dropped and recorded instead of worked around.

@@ -6,12 +6,16 @@ import { Channel, TestResult } from '../../core/models';
 import { describeError } from '../../core/errors';
 import { Notice } from '../../shared/notice';
 
-interface Field { key: string; label: string; type: string; hint: string; placeholder: string; }
+interface Field { key: string; label: string; type: string; hint: string; placeholder: string; autocomplete?: string; }
 
 /** Form fields per channel type. A type not listed here falls back to raw JSON, so a new channel works without frontend changes. */
 const FIELDS: Record<string, Field[]> = {
   Email: [{ key: 'address', label: 'Email address', type: 'email', hint: 'Alerts are sent here.', placeholder: 'you@example.com' }],
   Slack: [{ key: 'webhookUrl', label: 'Slack webhook URL', type: 'url', hint: 'Create an Incoming Webhook in Slack. It must start with https://hooks.slack.com/services/', placeholder: 'https://hooks.slack.com/services/…' }],
+  Webhook: [
+    { key: 'url', label: 'Webhook URL', type: 'url', hint: 'A public https address that accepts POST requests. Addresses inside a private network are not allowed.', placeholder: 'https://example.com/hooks/alerts' },
+    { key: 'secret', label: 'Signing secret', type: 'password', autocomplete: 'new-password', hint: 'At least 16 characters. Every message is signed with it so your server can check where it came from.', placeholder: '' },
+  ],
 };
 
 @Component({
@@ -75,7 +79,7 @@ const FIELDS: Record<string, Field[]> = {
         @for (f of fields(); track f.key) {
           <div>
             <label [for]="'f-' + f.key">{{ f.label }}</label>
-            <input [id]="'f-' + f.key" [name]="'f-' + f.key" [type]="f.type" [placeholder]="f.placeholder" [(ngModel)]="values[f.key]" required />
+            <input [id]="'f-' + f.key" [name]="'f-' + f.key" [type]="f.type" [placeholder]="f.placeholder" [attr.autocomplete]="f.autocomplete ?? null" [(ngModel)]="values[f.key]" required />
             <div class="small muted">{{ f.hint }}</div>
           </div>
         }
@@ -136,7 +140,8 @@ export class Channels implements OnInit {
     this.api.createChannel({ type: this.type, name: this.name.trim(), settings }).subscribe({
       next: (c) => {
         this.message.set(`Channel “${c.name}” added. Use “Send test” to check it works.`);
-        this.name = ''; this.values = {}; this.busy.set(false);
+        // Nothing typed stays on screen, in particular no secret.
+        this.name = ''; this.values = {}; this.json = '{}'; this.busy.set(false);
         this.reload();
       },
       error: (e: unknown) => { this.errors.set(describeError(e)); this.busy.set(false); },

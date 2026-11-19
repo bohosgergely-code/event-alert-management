@@ -222,3 +222,10 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 - The handler settings (no redirects, no proxy, guard attached) were first untested, so a wrong setting would have passed everything. Moved into a method and pinned by tests; mutation W10 and W15 then fail as they should.
 - My browser script assumed the form still had its previous type selected (script error, not an app error).
 - A screenshot showed the JSON box still holding the secret after a successful add. Fixed in the next commit.
+
+## R-033 – The follow-up: a proper form for the new channel (separate commit on purpose)
+
+- **Why separate:** the extensibility proof (R-029) had to stay a pure diff. The nicer form is a user-experience improvement made afterwards, and it is the only frontend change this channel needed.
+- **Change:** two fields for the webhook (URL and a masked signing secret) with hints, and the form is emptied after a successful add, so the secret no longer stays visible (found by reading a screenshot, R-032). A refused destination keeps what was typed so it can be corrected.
+- **Checks:** 5 new component tests; 3 deliberate bugs, 2 caught (secret shown as plain text, form not emptied). The third (an untrimmed URL) survived, and the reason is known: browsers and the test DOM already strip spaces from `url` fields before the value reaches the code, so the `.trim()` is a redundant safety net here (an equivalent mutant, as in R-007). The journey passed twice with the new form.
+- **Housekeeping slip:** I cleared the screenshot folder before regenerating it and removed an older piece of evidence (`rate-limit-message.png`) that the journey does not recreate. It was restored from git. The screenshots that prove the generic fallback were copied to a fixed folder (`evidence/generic-ui-proof/`) before the form replaced them.

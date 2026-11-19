@@ -29,5 +29,5 @@ Start the API first (`dotnet run --project ../EventAlertManagement.Api`). When t
 - **Typed contract.** `api-schema.ts` is generated and never edited. Request and response types come from it (`core/models.ts`), so a change in the API shows up as a compile error.
 - **Rule form logic is separate from the screen** (`core/rule-form.ts`) and unit tested. It sends only the filters of the chosen category, because the API rejects the rest.
 - **Session in `sessionStorage`**, cleared on sign-out and when the tab closes. The token is added only to `/api/*` calls, never to other addresses, and a rejected token signs the user out.
-- **New channel types need no frontend change**: unknown types fall back to a raw JSON settings box.
+- **New channel types need no frontend change**: unknown types fall back to a raw JSON settings box. The webhook worked that way first and got a dedicated form afterwards (see REVIEW_LOG R-029, R-033).
 - **Zoneless change detection** (the Angular 22 default): screens keep data in signals so they update when responses arrive.
