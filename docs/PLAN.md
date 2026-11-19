@@ -1,5 +1,7 @@
 # EventAlertManagement – Analysis and Implementation Plan
 
+> **Outcome:** this is the plan as written at the start and it is kept unchanged. How the work actually went, what was cut and what is still open is in [OUTCOME.md](OUTCOME.md).
+
 ## 1. Purpose of this document
 
 This is the starting point for the project. It turns a deliberately vague product brief into a set of explicit decisions, a scoped deliverable list, an architecture, and a plan for how the work will be executed and validated with AI agents.

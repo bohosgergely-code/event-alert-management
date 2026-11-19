@@ -32,6 +32,9 @@ flowchart LR
 
     UI[Angular app<br/>user + admin]
 
+    classDef notBuilt stroke-dasharray: 5 5,color:#888
+    class RSS,MKT notBuilt
+
     USGS --> NORM
     RSS --> NORM
     MKT --> NORM
@@ -46,6 +49,8 @@ flowchart LR
     UI <--> WEB
     WEB <--> DB
 ```
+
+Dashed boxes (RSS news, market prices) were designed but not built (ADR-020). Everything else in the diagram exists and is tested.
 
 Three things run inside one process:
 
@@ -251,8 +256,8 @@ Each source implements `IEventSource`, which receives its stored cursor and retu
 |---|---|
 | **Simulator** | Generates events on demand (API and admin UI) and optionally on a timer. Uses the same contract and the same pipeline. |
 | **USGS earthquakes** | Reads a public GeoJSON summary feed. DedupeKey uses the feature id. **Verified** against the real feed: URL, field names and id uniqueness are as assumed. Events are ignored if older than a configurable age (default 3 hours) so the first poll does not alert on a whole day of old quakes. Revised magnitudes are not re-notified (known limitation). |
-| **RSS news** | Reads one or more public RSS feeds. DedupeKey uses the item guid, falling back to the link. **To verify:** guid stability and publication date format. |
-| **Markets** | Polls a small configured list of tickers. Emits an event only when the absolute move reaches a floor (starting value 1%). (ADR-012) **To verify:** endpoint, rate limits, error format. |
+| **RSS news** (not built, ADR-020) | Reads one or more public RSS feeds. DedupeKey uses the item guid, falling back to the link. **To verify:** guid stability and publication date format. |
+| **Markets** (not built, ADR-020) | Polls a small configured list of tickers. Emits an event only when the absolute move reaches a floor (starting value 1%). (ADR-012) **To verify:** endpoint, rate limits, error format. |
 
 **Revised events.** If a source later reports a changed value for an item we already stored (for example a corrected earthquake magnitude), we keep the original event and do not notify again. This is a known limitation and is listed in the README.
 

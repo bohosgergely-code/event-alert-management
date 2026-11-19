@@ -233,7 +233,7 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 
 ## ADR-012: Market events use price-band de-duplication
 
-**Status:** Accepted (values to be tuned)
+**Status:** Designed, not implemented (no market source was built, see ADR-020). Values were never tuned against real prices.
 
 **Context.** A price changes constantly. A naive "alert when change exceeds X" would fire on every poll while the price stays above X.
 
@@ -401,3 +401,27 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - The secret and the path of the URL are never shown after saving (only the host).
 - A destination that is reachable only from inside a company network cannot be used. That is the point, and also a limit.
 - The live path over real TLS to a public server has not been exercised in this environment (see REVIEW_LOG R-031).
+
+---
+
+## ADR-020: Live news and market feeds are not built; the categories still work end to end
+
+**Status:** Accepted (a scope cut, made late and on purpose)
+
+**Context.** The brief names breaking news, market movements and natural disasters as examples. Three kinds of real data were planned. By the time the core, API, interface, two channels and a third were finished and verified, only natural disasters (USGS) had a live source. The news and market feeds had not been touched, and the hosts for them had been unreachable from the build environment when first tried.
+
+**Options.**
+1. Build quick adapters for an RSS feed and a price API in the remaining effort.
+2. Leave the two categories without live feeds, keep them fully supported by the rest of the system, and say so everywhere a user or reviewer would look.
+
+**Decision.** Option 2. The brief calls these examples ("that kind of thing"). A hurried adapter would carry the least evidence per unit of effort: neither was checked against a real response, which is how the USGS adapter found its real design flaw (REVIEW_LOG R-010), and a market adapter would also need the price-band design (ADR-012) tuned against real prices.
+
+**What still works for news and markets.** Rules, filters (keywords; ticker, size and direction), severity, cooldown, de-duplication, delivery, retries, admin views, and the simulator. An administrator can create news and market test events that go through the real pipeline (tests: keyword rules end to end; market rules on ticker, size and direction end to end).
+
+**What the user sees.** The rule editor states, for News and Markets, that no live feed is connected and that such rules react to test events created by an administrator. Two ready-made examples (Bitcoin moves, breaking-news words) exist for these categories and carry the same caveat.
+
+**Cost of adding a source later.** One class implementing the source contract, a captured real response as a fixture, and one registration, as the USGS adapter shows. ADR-012 describes the price-band approach for markets. It is a design, not implemented.
+
+**Consequences.**
+- The product, as delivered, watches the real world for natural disasters only. This is the largest gap against the brief's examples and is stated in the README first.
+- Assumption A7 (news has no reliable severity) is untested against real news, because no real news was ever read.

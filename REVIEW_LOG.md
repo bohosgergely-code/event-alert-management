@@ -2,6 +2,47 @@
 
 Every entry follows the same shape: what the AI produced or claimed, the check performed, the result, and the decision.
 
+## Summary
+
+34 entries. Entries marked open are also listed in [docs/OUTCOME.md](docs/OUTCOME.md).
+
+| ID | What | State |
+|---|---|---|
+| R-001 | Tests passed on the first run (suspicious) | Recorded |
+| R-002 | Channel contract differs from the design document | Recorded |
+| R-003 | Dispatcher failed on every send (AI code bug, found by tests) | Recorded |
+| R-004 | One failing source would have broken the others (found by reading the code) | Recorded |
+| R-005 | Meaningless condition in ingestion | Recorded |
+| R-006 | A failing concurrency test was the test's fault, not the code's | Not a bug |
+| R-007 | Mutation checks on the pipeline and the security code | Recorded |
+| R-008 | Slack behaviour was written from memory | **Partly closed** |
+| R-009 | SMTP transport had never talked to a real server | Closed |
+| R-010 | First real data changed the design (USGS) | Recorded |
+| R-011 | Test failures after seeding a second source were test mistakes | Recorded |
+| R-012 | Mutation checks on the USGS adapter | Recorded |
+| R-013 | Filters sent to the wrong category were silently dropped (design risk, caught before it shipped) | Recorded |
+| R-014 | Channel type names were compared three different ways (found by a test) | Recorded |
+| R-015 | Compiles, passes review, fails at the first request (AI pattern) | Recorded |
+| R-016 | Settings were read before the final configuration existed | Recorded |
+| R-017 | A failing test caused by shared state, not by the product | Recorded |
+| R-018 | Security and authorization mutation checks, and a real end-to-end run | Recorded |
+| R-019 | Email channel can be used to send mail to anyone | **Open** |
+| R-020 | The first generated API types made everything optional | Recorded |
+| R-021 | "Pinned" was not really pinned | Recorded |
+| R-022 | A confirmation message that did not say what it confirmed (found by the browser test) | Recorded |
+| R-023 | A screen that never updated by itself (found by the browser test) | Recorded |
+| R-024 | Not a bug: I had not started the API (my mistake) | Not a bug |
+| R-025 | The rate limiter worked, and the screen explained it | Recorded |
+| R-026 | One unexplained connection error in the server log | **Open** |
+| R-027 | Frontend mutation checks, and a test-writing trap | Recorded |
+| R-028 | Found by looking at the screens, not by any test | Recorded |
+| R-029 | The extensibility claim, checked as a diff | Recorded |
+| R-030 | "Is this address public?" is easy to get subtly wrong | Recorded |
+| R-031 | Not verified: delivery over real TLS to a public server | **Open** |
+| R-032 | Small things the build and a screenshot caught | Recorded |
+| R-033 | The follow-up: a proper form for the new channel (separate commit on purpose) | Recorded |
+| R-034 | Final pass: five things a reviewer would have found | Recorded |
+
 ---
 
 ## R-001 – Tests passed on the first run (suspicious)
@@ -229,3 +270,12 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 - **Change:** two fields for the webhook (URL and a masked signing secret) with hints, and the form is emptied after a successful add, so the secret no longer stays visible (found by reading a screenshot, R-032). A refused destination keeps what was typed so it can be corrected.
 - **Checks:** 5 new component tests; 3 deliberate bugs, 2 caught (secret shown as plain text, form not emptied). The third (an untrimmed URL) survived, and the reason is known: browsers and the test DOM already strip spaces from `url` fields before the value reaches the code, so the `.trim()` is a redundant safety net here (an equivalent mutant, as in R-007). The journey passed twice with the new form.
 - **Housekeeping slip:** I cleared the screenshot folder before regenerating it and removed an older piece of evidence (`rate-limit-message.png`) that the journey does not recreate. It was restored from git. The screenshots that prove the generic fallback were copied to a fixed folder (`evidence/generic-ui-proof/`) before the form replaced them.
+
+## R-034 – Final pass: five things a reviewer would have found
+
+- **The README overclaimed.** It said the system "watches public event sources (news, markets, natural disasters)" when only natural disasters have a live source. Rewritten to say what is real, and ADR-020 records the scope cut.
+- **A screen implied something false.** The rule editor offered News and Markets, plus two examples that can never fire from real data, with no hint. It now says that no live feed is connected and that such rules react to test events (component tests, 3 mutation checks).
+- **A claim I had not tested.** "Markets work end to end with test events" had only matcher-level tests behind it. A test now pushes market events through the whole path (ticker, size, direction, exact threshold).
+- **First run broken by a port.** A plain `dotnet run` listened on port 5215 while the web interface proxies to 5080, so anyone following the README would get a working API and a frontend that could not reach it. The launch profile now uses 5080, and I followed the README literally (API, web, proxy, user and admin sign-in) to confirm.
+- **Stale statements.** Status lines, test counts and "not started (hosts unreachable)" no longer matched reality. Corrected, with a clearer status for each assumption.
+- **What passed without changes:** a fresh clone from GitHub reproduced 383 backend and 69 frontend tests and a clean production build from nothing; no broken links among 23 markdown files; no secrets in tracked files; `tools/verify.sh` checks that the committed API description and generated types still match the running API.

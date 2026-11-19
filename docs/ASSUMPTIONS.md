@@ -30,7 +30,7 @@ Status values: **Open** (needs validating), **Decided** (backed by an ADR), **Ac
 | A1 | "Important" is defined by each user's rule, not by the system. | Decided (ADR-001) | We would need a scoring model, which is a much bigger project. | Review with the product owner; confirm that user-defined rules are what they mean. |
 | A2 | Three categories are enough: **news**, **markets**, **natural disasters**. | Decided | New categories need new source adapters and filter types. | The category list lives in one place so it is cheap to extend. |
 | A3 | Polling public sources every few minutes is fast enough. | Decided (ADR-002) | Truly "breaking" alerts could arrive late. | State the delay explicitly in the README; make poll interval configurable per source. |
-| A4 | Public, key-free sources are acceptable for real data (USGS earthquakes, an RSS news feed, a public market price API). | Open | Rate limits, terms of use or outages could block ingestion. | Capture real responses as fixtures; add source health to the admin view. |
+| A4 | Public, key-free sources are acceptable for real data (USGS earthquakes, an RSS news feed, a public market price API). | Partly tested: true for USGS. News and market sources were not built (ADR-020). | Rate limits, terms of use or outages could block ingestion. | Capture real responses as fixtures; add source health to the admin view. |
 | A5 | A **simulator source** and an admin "inject event" action are legitimate parts of the product (for demos and testing), not a hack. | Decided | Demos would depend on real-world events actually happening. | Keep them clearly labelled as simulated in the UI and in event data. |
 | A6 | **Severity is a number from 1 to 5**, mapped per source. Earthquake severity is derived from magnitude. Market severity is derived from the size of the price move. | Open | Alerts could feel too noisy or too quiet. | Mapping tables live in configuration; tune against recorded real data. |
 | A7 | **News has no reliable severity.** We cannot tell "breaking" from ordinary from an RSS feed. News events get a neutral default severity, and keyword filters are the main control for news rules. | Accepted risk | A minimum-severity filter is meaningless for news. | Say so in the UI and README rather than pretend otherwise. |
@@ -73,7 +73,7 @@ These are challenges to our own approach, kept here so they are not forgotten.
 
 ### In scope
 
-- Event ingestion from sources through a common adapter contract: simulator, USGS earthquakes (real), and optionally RSS news and a market price API.
+- Event ingestion from sources through a common adapter contract: simulator, USGS earthquakes (real), and and (planned, not built, ADR-020) an RSS news feed and a market price API.
 - User-defined alert rules (category, filters, minimum severity, channels, cooldown).
 - Matching events to rules, with de-duplication.
 - Reliable delivery (outbox, retries with backoff) through **email** and **Slack**.
@@ -100,6 +100,6 @@ Hypotheses are marked with the result of checking them against the real service.
 | Source | Hypothesis | Status |
 |---|---|---|
 | USGS earthquakes | A public GeoJSON summary feed exists without an API key; each feature has a stable id, magnitude, place, time and URL. | **Verified** with a real response (`fixtures/usgs/`, `evidence/004-usgs-and-slack-verification.md`). Ids are unique. `updated` differs from `time` for every feature, and 9 of 36 features had status `automatic` (not yet reviewed), so magnitude revisions are real. See R-010. |
-| RSS news | A public RSS feed provides title, link, publication date and a unique id or link. | Not verified yet. The environment could not reach the feed host when checked. |
-| Market prices | A public API returns current price and 24h change for a small set of tickers without a key, within rate limits. | Not verified yet. Same network restriction. |
+| RSS news | A public RSS feed provides title, link, publication date and a unique id or link. | Never tested, source not built (ADR-020). |
+| Market prices | A public API returns current price and 24h change for a small set of tickers without a key, within rate limits. | Never tested, source not built (ADR-020). |
 | Slack | An Incoming Webhook accepts a JSON body with text and responds with a plain "ok" on success. | **Verified against Slack's official documentation** (success, error codes, rate limiting, escaping). Not yet verified by posting to a real webhook. See R-008. |

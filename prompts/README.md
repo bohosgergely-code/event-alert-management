@@ -14,6 +14,8 @@ One file per meaningful exchange, named `NNN-role-topic.md` (for example `001-fr
 
 Rejected and failed attempts stay in the history. They are part of the evidence.
 
+**What these files are, and are not.** They are summaries of each exchange (the intent of the prompt, what was produced, what was checked, what was decided), not word-for-word transcripts. The author's own wording of the prompts and decisions is meant to be added to them, and the exported session is the complete record.
+
 ## Index
 
 | File | Topic |

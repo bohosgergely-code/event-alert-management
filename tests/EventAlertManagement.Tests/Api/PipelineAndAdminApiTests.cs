@@ -170,6 +170,37 @@ public class PipelineAndAdminApiTests : IClassFixture<ApiFactory>
         Assert.Equal(100, paged.GetProperty("pageSize").GetInt32());
     }
 
+    [Fact]
+    public async Task Market_events_match_on_ticker_size_and_direction_through_the_whole_pipeline()
+    {
+        // Markets have no live source in this version, but they must work end to end with test events (ADR-020).
+        var user = await _f.UserAsync(Unique());
+        var admin = await _f.AdminAsync();
+        var ticker = "T" + Tag().ToUpperInvariant();
+        var channel = (await (await user.PostAsJsonAsync("/api/channels", new { type = "Fake", name = "c", settings = new { } })).JsonAsync()).GetProperty("id").GetGuid();
+        var rule = await user.PostAsJsonAsync("/api/rules", new
+        {
+            name = "falls", category = "Markets", minSeverity = 1, filters = new { tickers = new[] { ticker }, minPercentMove = 5, direction = "Down" },
+            cooldownSeconds = 0, isEnabled = true, channelIds = new[] { channel },
+        });
+        Assert.Equal(HttpStatusCode.Created, rule.StatusCode);
+
+        async Task<int> Created(string t, double change)
+        {
+            var r = await admin.PostAsJsonAsync("/api/admin/events/inject", new { category = "Markets", severity = 3, title = $"{t} moved {change}%", ticker = t, changePercent = change });
+            return (await r.JsonAsync()).GetProperty("notificationsCreated").GetInt32();
+        }
+
+        Assert.Equal(1, await Created(ticker, -6.2));              // right ticker, big enough, right direction
+        Assert.Equal(0, await Created(ticker, 7.0));               // wrong direction
+        Assert.Equal(0, await Created(ticker, -3.0));              // too small
+        Assert.Equal(0, await Created("OTHER" + Tag().ToUpperInvariant(), -9.0)); // wrong ticker
+        Assert.Equal(1, await Created(ticker.ToLowerInvariant(), -5.0)); // injection upper-cases the ticker, and exactly the threshold counts
+
+        await _f.DispatchAsync();
+        Assert.Equal(2, _f.Fake.Sent.Count(m => m.Event.Title.StartsWith(ticker, StringComparison.OrdinalIgnoreCase) && m.Event.Category == EventCategory.Markets));
+    }
+
     // ---- admin-only behaviour ----
 
     [Theory]

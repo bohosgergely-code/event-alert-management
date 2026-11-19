@@ -41,6 +41,13 @@ import { Notice } from '../../shared/notice';
           </div>
         </div>
 
+        @if (m.category !== 'Disasters') {
+          <p class="notice info small" role="note" style="margin:0">
+            No live {{ m.category === 'News' ? 'news' : 'market' }} feed is connected in this version, so this rule reacts to test events created by an administrator.
+            Real events are available for natural disasters.
+          </p>
+        }
+
         <fieldset class="stack" style="border:1px solid var(--border); border-radius:8px">
           <legend class="small muted">Only alert me when…</legend>
           @switch (m.category) {
