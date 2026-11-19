@@ -152,7 +152,7 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 
 ## ADR-008: De-duplication and cooldown
 
-**Status:** Accepted
+**Status:** Accepted (refined by ADR-009: uniqueness is per rule, event and channel)
 
 **Context.** Feeds repeat items, polling can see the same item twice, and busy periods can produce bursts.
 
@@ -167,3 +167,126 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - A database unique constraint on (rule, event) makes duplicates impossible even if the matcher runs twice.
 - Cooldown suppresses noise but can hide a genuinely different event inside the cooldown window. We record suppressed matches so admins can see what was skipped.
 - A source with unstable identifiers could still produce duplicates. Verified against real feed data (see ASSUMPTIONS.md section 7).
+
+---
+
+## ADR-009: One notification per rule, event and channel
+
+**Status:** Accepted. Refines ADR-008.
+
+**Context.** A rule can deliver to several channels, and each channel can succeed or fail independently. ADR-008 spoke of one notification per (rule, event), which cannot express "email sent, Slack failed".
+
+**Options.**
+1. One notification per (rule, event) with a separate delivery record per channel.
+2. One notification per (rule, event, channel), each with its own status and attempts.
+
+**Decision.** Option 2. The unique constraint is on (rule, event, channel).
+
+**Consequences.**
+- Status, retries and manual retry are per destination, which matches what admins and users actually want to see.
+- Simpler model: no extra "delivery" entity between notification and attempt.
+- A rule with three channels creates three rows per match. Fine at this scale.
+- Cooldown is evaluated per rule, and a suppressed match creates a `Suppressed` row for each of the rule's channels.
+
+---
+
+## ADR-010: Rule filters as typed, versioned JSON
+
+**Status:** Accepted
+
+**Context.** Each category needs different filters (keywords for news, magnitude and region for disasters, tickers and thresholds for markets). We want one rule table, not three.
+
+**Options.**
+1. Separate tables per category.
+2. One table with every possible filter as a nullable column.
+3. Common columns (category, minimum severity, cooldown) plus a JSON document of category-specific filters, validated against a typed model and carrying a version number.
+
+**Decision.** Option 3.
+
+**Consequences.**
+- New categories or filters need no schema migration.
+- Validation moves into application code. Invalid JSON must never be saved, and matching tests cover every filter type.
+- Filters cannot be queried efficiently in SQL. Matching loads enabled rules for the event's category and evaluates in memory, which is fine at this scale.
+- The version number lets us read older filter shapes after changes.
+
+---
+
+## ADR-011: Matching runs right after ingestion, in the same transaction
+
+**Status:** Accepted
+
+**Context.** Events must reach rules without being lost or double-processed.
+
+**Options.**
+1. A separate matcher worker that scans for unprocessed events.
+2. Match inside the ingestion step, creating events and notifications in one transaction.
+
+**Decision.** Option 2.
+
+**Consequences.**
+- No "processed" flag on events and no window where an event exists but has not been matched.
+- A slow matcher would slow ingestion. Acceptable because matching is in-memory logic over a small rule set.
+- If the rule set ever becomes large, matching can move behind the same interface into its own worker.
+- Rules created after an event arrived do not retroactively match it. This is intended. The preview endpoint covers "what would this have matched".
+
+---
+
+## ADR-012: Market events use price-band de-duplication
+
+**Status:** Accepted (values to be tuned)
+
+**Context.** A price changes constantly. A naive "alert when change exceeds X" would fire on every poll while the price stays above X.
+
+**Options.**
+1. Emit an event on every poll for every ticker and let rules filter.
+2. Emit an event only when the absolute move reaches a floor, and de-duplicate by ticker, UTC day, direction and move band.
+
+**Decision.** Option 2. The de-duplication key includes a band (for example every 2.5 percentage points), so a ticker can raise a new event when its move reaches the next band, but not on every poll.
+
+**Consequences.**
+- Rules stay simple: threshold filters apply to the event's recorded percentage change.
+- Moves smaller than the floor never become events, so very sensitive rules cannot be satisfied. Documented.
+- Band size and floor are configuration and need tuning against real price data.
+- Daily rollover means a continuing move may alert again the next UTC day. Intended.
+
+---
+
+## ADR-013: Single dispatcher with leases and failure classification
+
+**Status:** Accepted
+
+**Context.** Several notifications may be due at once, a dispatcher may crash mid-send, and not all failures deserve a retry.
+
+**Options.**
+1. Send inline as notifications are created.
+2. One dispatcher that claims due notifications with an atomic update and a lease, classifies failures as transient or permanent, and retries only transient ones with backoff.
+3. Multiple dispatcher instances competing for work.
+
+**Decision.** Option 2. Option 3 is possible later, because claiming is already atomic.
+
+**Consequences.**
+- A crashed dispatcher leaves notifications with an expired lease, which the next cycle reclaims. A crash after sending but before recording can cause a duplicate send (at-least-once delivery, as stated in ADR-003).
+- Permanent failures such as a revoked webhook are not retried pointlessly.
+- SQLite allows a single writer, so one dispatcher also avoids lock contention.
+- Retry delays are configurable so tests and demos do not wait for an hour.
+
+---
+
+## ADR-014: Channel settings encrypted with Data Protection
+
+**Status:** Accepted
+
+**Context.** Channel settings contain secrets (Slack webhook URLs) and personal data (email addresses). They must not appear in logs, responses or database dumps in clear text.
+
+**Options.**
+1. Store settings as plain JSON.
+2. Encrypt settings with ASP.NET Core Data Protection and mask values in all outputs.
+3. An external secrets manager.
+
+**Decision.** Option 2.
+
+**Consequences.**
+- Protects against casual exposure (database file, backups, logs). It does not protect against someone who has both the database and the Data Protection keys.
+- Keys must persist across restarts, or stored settings become unreadable. The key location is part of the run instructions.
+- Secrets can no longer be searched in the database, so lookups use ids, not values.
+- An external secrets manager would be the production answer. Not in scope.
