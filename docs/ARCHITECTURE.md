@@ -286,7 +286,9 @@ Rendering is internal to each channel (it is not part of the contract), because 
 
 ## 7. API outline
 
-JSON over HTTPS, described by an OpenAPI document. The Angular client is generated from it. Errors use the standard problem-details format.
+JSON over HTTPS, described by an OpenAPI document (`docs/openapi.json`, exported from the running application). The Angular client is generated from it. Errors use the standard problem-details format. Enumerations travel as readable strings (for example `"Disasters"`).
+
+Rules every endpoint follows (ADR-015): a resource that belongs to someone else is reported as 404, exactly like a missing one; lists are paged with a page size capped at 100; per-user limits apply (20 channels, 50 rules).
 
 ### Authentication
 | Method | Path | Purpose |
@@ -299,7 +301,8 @@ JSON over HTTPS, described by an OpenAPI document. The Angular client is generat
 |---|---|---|
 | GET | `/api/me` | Current user. |
 | GET / POST | `/api/channels` | List and create channel configs. Settings are validated by the channel. Secrets are never returned in full. |
-| PUT / DELETE | `/api/channels/{id}` | Update or remove. |
+| GET | `/api/channels/types` | Channel types a user can currently choose (types switched off by an admin are left out). |
+| GET / PUT / DELETE | `/api/channels/{id}` | Read, update (omitted fields keep their value) or remove. Removing a channel that a rule uses is refused with 409. |
 | POST | `/api/channels/{id}/test` | Send a test message; returns the real result. |
 | GET / POST | `/api/rules` | List and create alert rules. |
 | GET / PUT / DELETE | `/api/rules/{id}` | |
@@ -319,7 +322,8 @@ JSON over HTTPS, described by an OpenAPI document. The Angular client is generat
 | GET | `/api/admin/sources` | Source health. |
 | PUT | `/api/admin/sources/{id}` | Enable, disable, change interval. |
 | POST | `/api/admin/sources/{id}/poll` | Poll now. |
-| GET / PUT | `/api/admin/channel-types` | List channel types and enable or disable each globally. |
+| GET | `/api/admin/channel-types` | List channel types and whether each is on. |
+| PUT | `/api/admin/channel-types/{type}` | Switch a registered channel type on or off for everyone. |
 
 ---
 
