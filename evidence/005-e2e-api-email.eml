@@ -1,0 +1,27 @@
+From: EventAlertManagement <alerts@eventalert.local>
+Date: Thu, 19 Nov 2026 11:59:57 +0000
+Subject: [Alert] M 6.8 - 40 km E of Sendai, Japan
+Message-Id: <8CM6NTADVUU4.AWVK9SFBAB8P1@vm>
+To: real.user@example.com
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="=-fP08d4yjzvPVsYsbAdUaYQ=="
+
+--=-fP08d4yjzvPVsYsbAdUaYQ==
+Content-Type: text/plain; charset=utf-8
+
+M 6.8 - 40 km E of Sendai, Japan
+
+Strong quake
+
+Where: 40 km E of Sendai, Japan
+When: 2026-11-19 11:59:56Z
+Link: https://example.com/q1
+
+Alert rule: Strong quakes
+(Simulated event)
+
+--=-fP08d4yjzvPVsYsbAdUaYQ==
+Content-Type: text/html; charset=utf-8
+
+<h2>M 6.8 - 40 km E of Sendai, Japan</h2><p>Strong quake</p><p><b>Where:</b> 40 km E of Sendai, Japan</p><p><b>When:</b> 2026-11-19 11:59:56Z</p><p><a href="https://example.com/q1">Open source</a></p><hr><small>Alert rule: Strong quakes</small><br><small>(Simulated event)</small>
+--=-fP08d4yjzvPVsYsbAdUaYQ==--

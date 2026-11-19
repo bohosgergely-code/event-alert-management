@@ -5,6 +5,8 @@ namespace EventAlertManagement.Core.Matching;
 
 public static class RuleValidator
 {
+    public const int MaxCooldownSeconds = 30 * 24 * 3600;
+
     public static IReadOnlyList<string> Validate(AlertRule rule)
     {
         var problems = new List<string>();
@@ -14,6 +16,7 @@ public static class RuleValidator
         if (!Enum.IsDefined(rule.Category)) problems.Add("Category is not valid.");
         if (rule.MinSeverity is < 1 or > 5) problems.Add("Minimum severity must be between 1 and 5.");
         if (rule.CooldownSeconds < 0) problems.Add("Cooldown cannot be negative.");
+        if (rule.CooldownSeconds > MaxCooldownSeconds) problems.Add("Cooldown cannot be longer than 30 days.");
         if (rule.Channels.Count == 0) problems.Add("At least one channel is required.");
 
         if (!Enum.IsDefined(rule.Category)) return problems;

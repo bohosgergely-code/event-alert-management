@@ -15,9 +15,19 @@ This repository is built as a worked example of taking a vague product brief to 
 | Slack channel | Done. Verified against Slack's documentation, **not yet against a live webhook** (R-008) |
 | USGS earthquake source | Done. Built on a real captured response and checked against the live service |
 | RSS news and market sources | Not started (hosts were not reachable when checked) |
-| Web API (users, rules, admin) and authentication | Not started |
+| Web API: sign-in, channels, rules (presets, preview), notification history, admin area | Done. 24 endpoints, OpenAPI in `docs/openapi.json`, verified end to end |
 | Angular user and admin interface | Not started |
 | Third channel (generic webhook) | Not started |
+
+## Run the application
+
+```bash
+dotnet run --project src/EventAlertManagement.Api
+```
+
+In the Development environment the API starts with placeholder secrets from `appsettings.Development.json` (signing key and admin key `dev-admin-key`). **These are for local use only.** Anywhere else the application refuses to start until `Auth:SigningKey` (32+ characters) is set, and admin sign-in stays off until `Auth:AdminKey` is set. Use environment variables or user secrets, never the repository.
+
+Swagger UI is available at `/swagger` in Development. Email goes to an SMTP server on `localhost:1025` by default (for example `python3 tools/smtp-sink.py`, or Mailpit). The local database file (`eventalert.db`) is created on first start; delete it after pulling changes that alter the data model.
 
 ## Run the tests
 
@@ -36,6 +46,8 @@ EAM_SMTP_TEST_PORT=1025 EAM_LIVE_TESTS=1 dotnet test
 
 ## Known limits
 
+- **Email addresses are not verified.** A user can register any address as an email channel, so the system could be used to send unwanted mail to third parties. Limits per user, a test rate limit and an admin switch reduce but do not remove the risk. The proper fix is a confirmation link before a channel is enabled (see REVIEW_LOG R-019).
+
 - Delivery is at-least-once. A crash between sending and recording can cause one duplicate message.
 - News has no reliable severity, so keyword filters are the main control for news rules.
-- Authentication will be minimal and is not production-safe.
+- Sign-in is minimal and not production-safe: knowing an email address is enough to act as that user (ADR-007, ADR-016).

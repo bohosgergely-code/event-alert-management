@@ -29,7 +29,12 @@ public sealed class FakeChannel(string type = "Fake") : INotificationChannel
     public List<NotificationMessage> Sent { get; } = new();
     public string Type => type;
 
+    private readonly Dictionary<string, ChannelSendResult> _byTitle = new();
+
     public FakeChannel Then(ChannelSendResult result) { _script.Enqueue(() => result); return this; }
+
+    /// <summary>Result for the message whose event has exactly this title, regardless of delivery order. Used once, then removed.</summary>
+    public FakeChannel ForTitle(string title, ChannelSendResult result) { lock (_byTitle) _byTitle[title] = result; return this; }
     public FakeChannel ThenThrow(Exception ex) { _script.Enqueue(() => throw ex); return this; }
 
     public IReadOnlyList<string> ValidateSettings(string settingsJson) => Array.Empty<string>();
@@ -38,6 +43,8 @@ public sealed class FakeChannel(string type = "Fake") : INotificationChannel
     public Task<ChannelSendResult> SendAsync(NotificationMessage message, string settingsJson, CancellationToken ct)
     {
         lock (Sent) Sent.Add(message);
+        lock (_byTitle)
+            if (_byTitle.Remove(message.Event.Title, out var scripted)) return Task.FromResult(scripted);
         var next = _script.Count > 0 ? _script.Dequeue() : () => ChannelSendResult.Ok();
         return Task.FromResult(next());
     }

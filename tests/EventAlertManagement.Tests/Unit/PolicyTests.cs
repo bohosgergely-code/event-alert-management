@@ -136,3 +136,40 @@ public class RuleValidatorTests
         Assert.NotEmpty(RuleValidator.Validate(rule));
     }
 }
+
+public class RuleFilterStrictnessTests
+{
+    [Theory]
+    [InlineData(EventCategory.Disasters, "{\"tickers\":[\"BTC\"]}")]            // market field on a disaster rule
+    [InlineData(EventCategory.Markets, "{\"includeKeywords\":[\"storm\"]}")]    // news field on a market rule
+    [InlineData(EventCategory.News, "{\"minMagnitude\":6}")]                    // disaster field on a news rule
+    [InlineData(EventCategory.News, "{\"includeKeyword\":[\"typo\"]}")]         // misspelled property
+    public void Filters_for_the_wrong_category_or_with_typos_are_rejected(EventCategory category, string json)
+        => Assert.Throws<FormatException>(() => RuleFilterSerializer.Parse(category, json));
+
+    [Fact]
+    public void Stored_filters_round_trip_through_serialize_and_parse()
+    {
+        var original = new MarketFilters { Tickers = { "BTC", "ETH" }, MinPercentMove = 4.5, Direction = MoveDirection.Down };
+        var parsed = Assert.IsType<MarketFilters>(RuleFilterSerializer.Parse(EventCategory.Markets, RuleFilterSerializer.Serialize(original)));
+        Assert.Equal(original.Tickers, parsed.Tickers);
+        Assert.Equal(4.5, parsed.MinPercentMove);
+        Assert.Equal(MoveDirection.Down, parsed.Direction);
+    }
+
+    [Fact]
+    public void A_stored_rule_with_unknown_filter_fields_never_matches_instead_of_matching_everything()
+    {
+        var rule = Rule(EventCategory.Disasters);
+        rule.FiltersJson = "{\"tickers\":[\"BTC\"]}";
+        Assert.False(new EventMatcher().Matches(rule, Quake(8)));
+    }
+
+    [Fact]
+    public void Excessive_cooldown_is_rejected()
+    {
+        var rule = Rule(EventCategory.News); rule.Channels.Add(new ChannelConfig());
+        rule.CooldownSeconds = RuleValidator.MaxCooldownSeconds + 1;
+        Assert.NotEmpty(RuleValidator.Validate(rule));
+    }
+}

@@ -47,6 +47,9 @@ public sealed class EventIngestionService(
                 .Where(r => r.IsEnabled && categories.Contains(r.Category))
                 .ToListAsync(ct);
 
+            var disabledTypes = (await db.ChannelTypeSettings.Where(t => !t.IsEnabled).Select(t => t.Type).ToListAsync(ct))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             foreach (var ev in fresh)
             {
                 foreach (var rule in rules.Where(r => matcher.Matches(r, ev)))
@@ -65,6 +68,11 @@ public sealed class EventIngestionService(
                         {
                             n.Status = NotificationStatus.Suppressed;
                             n.SuppressedReason = "Channel is disabled.";
+                        }
+                        else if (disabledTypes.Contains(channel.Type))
+                        {
+                            n.Status = NotificationStatus.Suppressed;
+                            n.SuppressedReason = $"{channel.Type} notifications are switched off by an administrator.";
                         }
                         else if (inCooldown)
                         {

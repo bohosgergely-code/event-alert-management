@@ -133,6 +133,10 @@ public sealed class NotificationDispatcher(
         var config = n.ChannelConfig!;
         if (!config.IsEnabled) return ChannelSendResult.Permanent("Channel is disabled.");
 
+        // Compared in memory and ignoring case, exactly like the channel registry and ingestion do (the table is tiny).
+        var switchedOff = await db.ChannelTypeSettings.Where(t => !t.IsEnabled).Select(t => t.Type).ToListAsync(ct);
+        if (switchedOff.Contains(config.Type, StringComparer.OrdinalIgnoreCase)) return ChannelSendResult.Permanent($"{config.Type} notifications are switched off by an administrator.");
+
         var channel = registry.Find(config.Type);
         if (channel is null) return ChannelSendResult.Permanent($"Unknown channel type '{config.Type}'.");
 

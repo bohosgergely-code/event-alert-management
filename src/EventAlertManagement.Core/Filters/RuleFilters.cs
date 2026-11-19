@@ -41,9 +41,12 @@ public sealed record MarketFilters : RuleFilters
 
 public static class RuleFilterSerializer
 {
+    // Unknown properties are rejected, not ignored. Otherwise a filter meant for another category (for example
+    // tickers sent to a disaster rule) would be dropped silently and leave a rule that matches everything.
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
+        UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow,
     };
 
     public static string Serialize(RuleFilters filters) =>

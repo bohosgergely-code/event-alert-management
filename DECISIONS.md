@@ -290,3 +290,43 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - Keys must persist across restarts, or stored settings become unreadable. The key location is part of the run instructions.
 - Secrets can no longer be searched in the database, so lookups use ids, not values.
 - An external secrets manager would be the production answer. Not in scope.
+
+---
+
+## ADR-015: Foreign resources look exactly like missing ones; everything is closed by default
+
+**Status:** Accepted
+
+**Context.** Every user endpoint takes ids from the caller. If the answer for "someone else's channel" differs from "no such channel", the API leaks which ids exist. A forgotten authorization attribute on a new endpoint would also leave it open.
+
+**Options.**
+1. Return 403 for resources that belong to someone else.
+2. Return 404 for both foreign and missing resources, and make every lookup include the owner.
+3. Rely on each developer remembering to check ownership.
+
+**Decision.** Option 2, plus a fallback authorization policy that requires a signed-in user on every endpoint that does not say otherwise. Only the two sign-in endpoints are anonymous. Rule creation reports a foreign channel id with the same message as a missing one.
+
+**Consequences.**
+- Ownership is part of the query, not a check after loading, so a forgotten check shows up as "not found" rather than as a data leak.
+- A test walks every route the application exposes and verifies anonymous callers get 401, normal users get 403 on `/api/admin/*`, and admin tokens cannot use user endpoints. A new endpoint is covered automatically.
+- Debugging is slightly harder because "not found" can mean "not yours". Acceptable.
+
+---
+
+## ADR-016: Sign-in hardening that fits a minimal scheme
+
+**Status:** Accepted. Implements ADR-007.
+
+**Context.** ADR-007 accepts that knowing an email address is enough to act as that user. The admin key is the one real secret, so it needs protection that costs little.
+
+**Decision.**
+- Tokens are signed JWTs with issuer, audience and lifetime checked and only HMAC-SHA256 accepted (blocks the "alg none" trick).
+- The application refuses to start without a signing key of at least 32 characters.
+- The admin key is compared in constant time. An empty configured key disables admin sign-in entirely (it does not mean "no password").
+- Sign-in endpoints are rate limited per client address (default 10 per minute).
+- Errors that reach clients are generic. Details go to the server log only.
+
+**Consequences.**
+- The development settings file contains a placeholder signing key and admin key so the app runs out of the box. They are for local use only and must be replaced elsewhere. This is stated in the README.
+- The rate limiter keeps its counters in memory, so it resets on restart and does not span several instances. Fine for one process.
+- Anyone who knows (or guesses) an email address can sign in as that user. An email-verified or password-based flow is the production answer and remains a non-goal.

@@ -91,3 +91,49 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 - **Check:** Five deliberate bugs (age limit removed, wrong shape returns empty, severity hard-coded, HTTP errors ignored, depth read from the wrong coordinate).
 - **Result:** All five caught (see `evidence/004-usgs-and-slack-verification.md`).
 - **Also done:** an opt-in live test (`EAM_LIVE_TESTS=1`) runs the production code path against the real service. It returned 36 events with the strongest at M6.1, matching the saved fixture.
+
+## R-013 – Filters sent to the wrong category were silently dropped (design risk, caught before it shipped)
+
+- **AI output:** The first version of the filter parser ignored unknown JSON properties, which is the default.
+- **Check:** Thought through what a mistaken request would do, then wrote the test first.
+- **Result:** `{"tickers":["BTC"]}` sent to a *Disasters* rule would parse into an empty disaster filter and the rule would then match every earthquake. A typo such as `includeKeyword` would do the same to a news rule. Both are silent and noisy, the worst combination.
+- **Decision:** Unknown properties are now rejected (`UnmappedMemberHandling.Disallow`). The matcher treats a stored rule that fails to parse as "never matches", never as "matches everything". Tests at three levels; removing the setting makes them fail (mutation A12).
+
+## R-014 – Channel type names were compared three different ways (found by a test)
+
+- **Observation:** The test for "admin switches a channel type off" failed: a send still went out.
+- **Cause:** The switch stored `fake`; the channel registry and ingestion compared names ignoring case, but the dispatcher's database query compared exactly (SQLite's default). New matches were suppressed while already queued ones were still sent.
+- **Decision:** The dispatcher now compares in memory ignoring case, like the other two. The admin endpoint also only accepts registered types and stores their canonical spelling, so the problem cannot be created through the API either.
+
+## R-015 – Compiles, passes review, fails at the first request (AI pattern)
+
+- **AI output:** DTOs written as C# records with validation attributes written as `[property: Required]`.
+- **Check:** First real request to the sign-in endpoint returned 500 with a generic body (the error handler correctly hides details). The server log showed: validation metadata on a record must be on the constructor *parameter*.
+- **Result:** Every endpoint taking a body would have failed. The build was clean; unit tests of the controllers' logic would not have caught it, only a real HTTP request does.
+- **Decision:** Attribute targets corrected. Lesson recorded: after generating web code, make a real request and read the log. Hiding errors from clients is right, but it makes the log the first place to look.
+
+## R-016 – Settings were read before the final configuration existed
+
+- **AI output:** `Program.cs` read the authentication settings eagerly at the top of the file.
+- **Check:** Every API test failed at start-up, even though the test host provided the settings.
+- **Result:** Configuration added by the hosting environment after that line (test host, environment variables injected later) was missed. In production this would look like "my setting is ignored".
+- **Decision:** Settings are now bound as options, resolved lazily, and validated when the host starts (so a missing key still stops the application immediately). A test checks that it refuses to start with a short key.
+
+## R-017 – A failing test caused by shared state, not by the product
+
+- **Observation:** The "failed delivery can be retried" test could not find its failed notification.
+- **Cause:** Scripted results were consumed in queue order. Earlier tests in the same class leave undelivered notifications behind, and the dispatcher handles the oldest first, so the scripted failure hit a leftover from another test.
+- **Decision:** Scripted results are now matched by event title instead of by position. Product code unchanged. Three runs in a row green.
+
+## R-018 – Security and authorization mutation checks, and a real end-to-end run
+
+- **Check:** 14 deliberate bugs in ownership checks, role requirements, token validation, masking, sanitizing, rate limiting, filter strictness and retry rules (`evidence/005-api-verification.md`).
+- **Result:** All 14 caught.
+- **Real run:** Started the actual application with its background workers, a real SMTP server and real HTTP calls: created a channel and a rule, injected three events (strong quake in Japan, weak quake in Japan, strong quake in Chile). Exactly one email was delivered, the user's history shows it as sent. The live USGS poller stored 4 real events by itself. A request to register `https://169.254.169.254/...` as a Slack webhook was refused. No errors in the server log.
+
+## R-019 – Email channel can be used to send mail to anyone (OPEN, not fixed)
+
+- **Observation:** While writing the channel test endpoint: a user can register *any* address as an email channel, press "test" (limited to once per 10 seconds) and create rules that send alerts to it. Nobody confirms they own the address.
+- **Risk:** The system can be used to send unwanted mail to third parties, and it is our mail server's reputation on the line. This is a real abuse path, not a theoretical one.
+- **Mitigations in place:** per-user limits (20 channels, 50 rules), test rate limit, cooldown per rule, simulated events marked as such, admin kill switch per channel type.
+- **Not done, and the proper fix:** send a confirmation link to a new address and only enable the channel once it is clicked (double opt-in). That needs a token table and one more endpoint. Recommended before any real deployment; left out of this scope and listed in the README.

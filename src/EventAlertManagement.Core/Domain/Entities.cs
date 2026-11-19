@@ -130,3 +130,14 @@ public class DeliveryAttempt
     /// <summary>Sanitized: must never contain secrets or webhook URLs.</summary>
     public string? ErrorMessage { get; set; }
 }
+
+/// <summary>
+/// Admin switch for a whole channel type (for example to stop all Slack traffic during an incident).
+/// A type with no row is enabled.
+/// </summary>
+public class ChannelTypeSetting
+{
+    public string Type { get; set; } = "";
+    public bool IsEnabled { get; set; } = true;
+    public DateTime UpdatedAt { get; set; }
+}

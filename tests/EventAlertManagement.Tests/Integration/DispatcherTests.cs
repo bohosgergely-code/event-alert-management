@@ -254,3 +254,57 @@ public class DispatcherTests : IDisposable
         Assert.Equal(NotificationStatus.Sent, Load(id).Status);
     }
 }
+
+public class ChannelTypeSwitchTests : IDisposable
+{
+    private readonly Harness _h = new();
+    public void Dispose() => _h.Dispose();
+
+    private void SwitchOff(string type)
+    {
+        using var db = _h.NewDb();
+        db.ChannelTypeSettings.Add(new ChannelTypeSetting { Type = type, IsEnabled = false, UpdatedAt = _h.Clock.UtcNow });
+        db.SaveChanges();
+    }
+
+    private async Task Setup()
+    {
+        using var db = _h.NewDb();
+        var u = _h.AddUser(db);
+        _h.AddRule(db, u, EventCategory.News, null, 1, 0, _h.AddChannel(db, u, "Fake"));
+    }
+
+    [Fact]
+    public async Task Switched_off_type_suppresses_new_matches_with_a_visible_reason()
+    {
+        await Setup(); SwitchOff("Fake");
+        using var db = _h.NewDb();
+        var r = await _h.Ingestion(db).IngestAsync(_h.SimSource(db), new[] { Harness.NewsItem("a") }, null, default);
+
+        Assert.Equal(0, r.NotificationsCreated);
+        using var check = _h.NewDb();
+        var n = check.Notifications.Single();
+        Assert.Equal(NotificationStatus.Suppressed, n.Status);
+        Assert.Contains("administrator", n.SuppressedReason);
+    }
+
+    [Fact]
+    public async Task Type_switched_off_after_matching_is_not_sent_and_can_be_retried_once_switched_on()
+    {
+        await Setup();
+        using (var db = _h.NewDb()) await _h.Ingestion(db).IngestAsync(_h.SimSource(db), new[] { Harness.NewsItem("a") }, null, default);
+        SwitchOff("fake"); // type comparison must not depend on letter case in the switch table
+
+        using (var db = _h.NewDb()) await _h.Dispatcher(db).RunOnceAsync(10, default);
+        Assert.Empty(_h.Channel.Sent);
+
+        using (var db = _h.NewDb())
+        {
+            Assert.Equal(NotificationStatus.Failed, db.Notifications.Single().Status);
+            db.ChannelTypeSettings.ExecuteDelete();
+            Assert.True(await new EventAlertManagement.Infrastructure.Dispatch.NotificationRetryService(db, _h.Clock).RetryAsync(db.Notifications.Single().Id, default));
+        }
+        using (var db = _h.NewDb()) await _h.Dispatcher(db).RunOnceAsync(10, default);
+        Assert.Single(_h.Channel.Sent);
+    }
+}

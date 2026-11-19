@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<DeliveryAttempt> DeliveryAttempts => Set<DeliveryAttempt>();
+    public DbSet<ChannelTypeSetting> ChannelTypeSettings => Set<ChannelTypeSetting>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder builder)
     {
@@ -42,6 +43,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
 
         b.Entity<Source>(e => e.HasIndex(x => x.Key).IsUnique());
+        b.Entity<ChannelTypeSetting>(e => { e.HasKey(x => x.Type); e.Property(x => x.Type).HasMaxLength(50); });
 
         b.Entity<Event>(e =>
         {
