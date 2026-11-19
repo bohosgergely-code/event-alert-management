@@ -1,0 +1,33 @@
+name: CI
+
+# The same commands that tools/verify.sh runs locally.
+# Note: written without being able to execute GitHub Actions from the build environment, so the first run is the real test.
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/EventAlertManagement.Web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/EventAlertManagement.Web/package-lock.json
+      - run: npm ci
+      - run: npm test -- --watch=false
+      - run: npm run build
