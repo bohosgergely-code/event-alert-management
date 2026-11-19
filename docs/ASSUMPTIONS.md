@@ -93,13 +93,13 @@ These are challenges to our own approach, kept here so they are not forgotten.
 - Localization and accessibility polish beyond sensible defaults.
 - A polished visual design.
 
-## 7. Source-specific notes (to verify against the real services)
+## 7. Source-specific notes
 
-These are hypotheses that must be checked with real requests before relying on them. Any mismatch goes in the review log.
+Hypotheses are marked with the result of checking them against the real service. Mismatches and surprises are logged in [REVIEW_LOG.md](../REVIEW_LOG.md).
 
-| Source | Hypothesis | To verify |
+| Source | Hypothesis | Status |
 |---|---|---|
-| USGS earthquakes | A public GeoJSON summary feed exists without an API key; each feature has a stable id, magnitude, place, time and URL. | Real response saved as a fixture; confirm field names and the id's stability. |
-| RSS news | A public RSS feed provides title, link, publication date and a unique id or link. | Real response saved; check how often items repeat and whether the guid is stable. |
-| Market prices | A public API returns current price and 24h change for a small set of tickers without a key, within rate limits. | Real response saved; confirm limits and error behavior. |
-| Slack | An Incoming Webhook accepts a JSON body with text (and optionally blocks) and responds with a plain "ok" on success. | Official documentation and, if possible, a real test webhook. |
+| USGS earthquakes | A public GeoJSON summary feed exists without an API key; each feature has a stable id, magnitude, place, time and URL. | **Verified** with a real response (`fixtures/usgs/`, `evidence/004-usgs-and-slack-verification.md`). Ids are unique. `updated` differs from `time` for every feature, and 9 of 36 features had status `automatic` (not yet reviewed), so magnitude revisions are real. See R-010. |
+| RSS news | A public RSS feed provides title, link, publication date and a unique id or link. | Not verified yet. The environment could not reach the feed host when checked. |
+| Market prices | A public API returns current price and 24h change for a small set of tickers without a key, within rate limits. | Not verified yet. Same network restriction. |
+| Slack | An Incoming Webhook accepts a JSON body with text and responds with a plain "ok" on success. | **Verified against Slack's official documentation** (success, error codes, rate limiting, escaping). Not yet verified by posting to a real webhook. See R-008. |

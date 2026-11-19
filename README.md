@@ -11,8 +11,10 @@ This repository is built as a worked example of taking a vague product brief to 
 | Domain model, matcher, cooldown, retry policy | Done, unit tested |
 | Ingestion with de-duplication, outbox, dispatcher | Done, integration tested on real SQLite |
 | Simulator source | Done |
-| Email and Slack channels | Done, tested against stubs. **Not yet verified against a real SMTP server or Slack** (see REVIEW_LOG R-008, R-009) |
-| USGS earthquake source | Not started |
+| Email channel | Done. Verified with a real SMTP server (not Mailpit), see REVIEW_LOG R-009 |
+| Slack channel | Done. Verified against Slack's documentation, **not yet against a live webhook** (R-008) |
+| USGS earthquake source | Done. Built on a real captured response and checked against the live service |
+| RSS news and market sources | Not started (hosts were not reachable when checked) |
 | Web API (users, rules, admin) and authentication | Not started |
 | Angular user and admin interface | Not started |
 | Third channel (generic webhook) | Not started |
@@ -23,6 +25,13 @@ Requires the .NET 8 SDK.
 
 ```bash
 dotnet test
+```
+
+Optional checks against real services (skipped by default):
+
+```bash
+python3 tools/smtp-sink.py 1025 /tmp/smtp-out &
+EAM_SMTP_TEST_PORT=1025 EAM_LIVE_TESTS=1 dotnet test
 ```
 
 ## Known limits

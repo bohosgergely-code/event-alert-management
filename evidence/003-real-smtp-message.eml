@@ -1,0 +1,27 @@
+From: EventAlertManagement <alerts@eventalert.local>
+Date: Thu, 19 Nov 2026 11:33:51 +0000
+Subject: [Alert] M 6.1 - 20 km N of Testville <b>bold</b>
+Message-Id: <1HT0SM3DVUU4.56WD9HI93FQI1@vm>
+To: person@example.com
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="=-dYerJkBCMuWIpqWNM5MtbA=="
+
+--=-dYerJkBCMuWIpqWNM5MtbA==
+Content-Type: text/plain; charset=utf-8
+
+M 6.1 - 20 km N of Testville <b>bold</b>
+
+A test alert & more.
+
+Where: Testville
+When: 2026-06-01 10:00:00Z
+Link: https://example.com/event/1
+
+Alert rule: Quakes over 6
+(Simulated event)
+
+--=-dYerJkBCMuWIpqWNM5MtbA==
+Content-Type: text/html; charset=utf-8
+
+<h2>M 6.1 - 20 km N of Testville &lt;b&gt;bold&lt;/b&gt;</h2><p>A test alert &amp; more.</p><p><b>Where:</b> Testville</p><p><b>When:</b> 2026-06-01 10:00:00Z</p><p><a href="https://example.com/event/1">Open source</a></p><hr><small>Alert rule: Quakes over 6</small><br><small>(Simulated event)</small>
+--=-dYerJkBCMuWIpqWNM5MtbA==--

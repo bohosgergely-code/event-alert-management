@@ -22,5 +22,17 @@ public static class DbInitializer
             });
             await db.SaveChangesAsync(ct);
         }
+
+        if (!await db.Sources.AnyAsync(s => s.Key == UsgsEarthquakeSource.SourceKey, ct))
+        {
+            db.Sources.Add(new Source
+            {
+                Key = UsgsEarthquakeSource.SourceKey,
+                Name = "USGS earthquakes",
+                Category = EventCategory.Disasters,
+                PollIntervalSeconds = 300,
+            });
+            await db.SaveChangesAsync(ct);
+        }
     }
 }

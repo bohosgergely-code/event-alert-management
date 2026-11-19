@@ -97,7 +97,12 @@ public class PollingTests : IDisposable
     [Fact]
     public async Task Source_is_not_polled_again_before_its_interval_has_passed()
     {
-        using (var db = _h.NewDb()) { db.Sources.Single(s => s.Key == "simulator").PollIntervalSeconds = 60; db.SaveChanges(); }
+        using (var db = _h.NewDb())
+        {
+            db.Sources.Single(s => s.Key == "simulator").PollIntervalSeconds = 60;
+            db.Sources.Single(s => s.Key == "usgs-earthquakes").IsEnabled = false; // seeded source, not under test here
+            db.SaveChanges();
+        }
 
         using (var db = _h.NewDb()) Assert.Equal(1, await _h.Poller(db, _h.Simulator).PollDueAsync(default));
         _h.Clock.Advance(TimeSpan.FromSeconds(30));

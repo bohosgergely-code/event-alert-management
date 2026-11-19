@@ -250,7 +250,7 @@ Each source implements `IEventSource`, which receives its stored cursor and retu
 | Source | Detail |
 |---|---|
 | **Simulator** | Generates events on demand (API and admin UI) and optionally on a timer. Uses the same contract and the same pipeline. |
-| **USGS earthquakes** | Reads a public GeoJSON summary feed. DedupeKey uses the feature id. **To verify:** URL, field names, id stability, update behavior (USGS may revise an event's magnitude after first publishing). |
+| **USGS earthquakes** | Reads a public GeoJSON summary feed. DedupeKey uses the feature id. **Verified** against the real feed: URL, field names and id uniqueness are as assumed. Events are ignored if older than a configurable age (default 3 hours) so the first poll does not alert on a whole day of old quakes. Revised magnitudes are not re-notified (known limitation). |
 | **RSS news** | Reads one or more public RSS feeds. DedupeKey uses the item guid, falling back to the link. **To verify:** guid stability and publication date format. |
 | **Markets** | Polls a small configured list of tickers. Emits an event only when the absolute move reaches a floor (starting value 1%). (ADR-012) **To verify:** endpoint, rate limits, error format. |
 

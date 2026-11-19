@@ -47,6 +47,15 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SimulatorSource>();
         services.AddSingleton<IEventSource>(sp => sp.GetRequiredService<SimulatorSource>());
 
+        services.Configure<UsgsOptions>(config.GetSection("Sources:Usgs"));
+        services.AddHttpClient(UsgsEarthquakeSource.HttpClientName)
+            .ConfigureHttpClient(c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(20);
+                c.MaxResponseContentBufferSize = 10 * 1024 * 1024;
+            });
+        services.AddSingleton<IEventSource, UsgsEarthquakeSource>();
+
         services.AddScoped<EventIngestionService>();
         services.AddScoped<SourcePollService>();
         services.AddScoped<NotificationDispatcher>();
