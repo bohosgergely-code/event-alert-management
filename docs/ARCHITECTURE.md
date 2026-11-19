@@ -329,7 +329,7 @@ Rules every endpoint follows (ADR-015): a resource that belongs to someone else 
 
 ## 8. Frontend structure
 
-Angular with standalone components, a typed client generated from OpenAPI, and route guards for sign-in and admin role. Visual design is intentionally plain.
+Angular with standalone components, request and response types generated from OpenAPI, and route guards for sign-in and admin role (the API enforces access; guards only steer people to the right page). Visual design is intentionally plain. See ADR-017 and ADR-018 and `src/EventAlertManagement.Web/README.md`.
 
 | Area | Screens |
 |---|---|

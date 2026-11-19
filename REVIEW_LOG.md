@@ -137,3 +137,60 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 - **Risk:** The system can be used to send unwanted mail to third parties, and it is our mail server's reputation on the line. This is a real abuse path, not a theoretical one.
 - **Mitigations in place:** per-user limits (20 channels, 50 rules), test rate limit, cooldown per rule, simulated events marked as such, admin kill switch per channel type.
 - **Not done, and the proper fix:** send a confirmation link to a new address and only enable the channel once it is clicked (double opt-in). That needs a token table and one more endpoint. Recommended before any real deployment; left out of this scope and listed in the README.
+
+## R-020 – The first generated API types made everything optional
+
+- **AI output:** TypeScript types generated from the OpenAPI description came out with every field optional (`id?: string`) and enum names with full namespaces.
+- **Check:** Read the generated types before using them.
+- **Result:** Optional everywhere would force `!` or checks on every field, and hide real mistakes (a missing field would compile). The cause was in the API's description, not in the generator: non-nullable fields were not marked required.
+- **Decision:** Fixed at the source: the API now marks non-nullable properties as required and uses short schema names. Regenerated: `id: string`, `lastNotifiedAt?: string | null`, enums as string unions. `tools/export-openapi.sh` makes the export repeatable.
+
+## R-021 – "Pinned" was not really pinned
+
+- **Observation:** The scaffold was created with Angular CLI 22.2.7 (chosen deliberately, see ADR-017), but `npm ls` showed 22.3.0 packages, a release from the same day.
+- **Cause:** The generated `package.json` used `^` ranges. Installing single packages one at a time also failed with version conflicts, and the type generator refused to install next to TypeScript 6.
+- **Decision:** All Angular packages set to the exact same version in one edit, lock file regenerated. The generator (supports TypeScript 5 only) runs through `npx`. `--force` was rejected because it would hide a real incompatibility.
+
+## R-022 – A confirmation message that did not say what it confirmed (found by the browser test)
+
+- **Observation:** The browser test read "1 alert queued" for an event that should have created none.
+- **Cause:** The message from the previous test event was still on screen. The app never said which event it referred to. A real person creating two test events in a row could misread it the same way.
+- **Decision:** Product fix, not a test workaround: the message now names the event.
+
+## R-023 – A screen that never updated by itself (found by the browser test)
+
+- **Observation:** The browser waited 20 seconds for a delivery to show as "Sent" and gave up, although the server had delivered it within a second.
+- **Cause:** The deliveries screen loaded once. An administrator watching an alert get delivered would see it stuck on "Pending" until reloading, on the one screen where freshness matters most.
+- **Decision:** Deliveries refresh every 5 seconds without flicker (an opened row stays open) and have a Refresh button. History refreshes every 10 seconds.
+
+## R-024 – Not a bug: I had not started the API (my mistake)
+
+- **Observation:** Sign-in returned "The server had a problem" and the journey failed, once with a server-looking message. The API log had no error.
+- **Check:** Asked what else could produce a 5xx: curl to the API returned nothing, no API process was running, and the dev server's log showed `ECONNREFUSED` from its proxy. The API log said `command not found`: I had written an environment variable name containing dots in front of the start command, which the shell treats as a command.
+- **Result:** The browser and the app were fine; the backend was simply not running. Time spent here would have been wasted on a phantom bug if the proxy log and process list had not been checked first.
+- **Decision:** Lesson recorded: when a 5xx is not in the API log, check that the API is alive and what sits in between before suspecting the code. Launch lines for the stack are now in `e2e/README.md`.
+
+## R-025 – The rate limiter worked, and the screen explained it
+
+- **Observation:** Running the journey twice within a minute failed at sign-in with "Too many requests".
+- **Check:** Looked at the failure screenshot instead of assuming.
+- **Result:** The limit (10 sign-ins per minute) did its job and the message was clear (`evidence/e2e/rate-limit-message.png`). One journey legitimately signs in several times.
+- **Decision:** The E2E stack starts the API with a higher limit (documented). The default stays at 10.
+
+## R-026 – One unexplained connection error in the server log (OPEN, no impact found)
+
+- **Observation:** In some runs the API log shows exactly one line, `An error occurred using the connection to database`, in the first seconds after start, when real traffic and the first background poll overlap. With connection-level logging the failed open is followed immediately by a successful one.
+- **Checks:** Could not reproduce without traffic (3 starts), with 3 consecutive full browser journeys the only error line was that one, and the browser test fails on any 5xx response, so none occurred. A stress test fired 40 parallel sign-ins at the moment of startup plus 3 more rounds of 40: all 160 returned 200, no error lines, 160 users created.
+- **Action taken:** Write-ahead logging is switched on for the database (the usual remedy when several writers share one SQLite file). This is hardening, not a proven fix, since the cause was not found.
+- **Status:** Open. No lost request or wrong result was ever observed. If it appeared in production the next step is to attach an interceptor that logs the actual exception.
+
+## R-027 – Frontend mutation checks, and a test-writing trap
+
+- **Check:** 10 deliberate bugs in the interceptor, guards, session handling, filter building, unit conversion, list parsing and error wording (`evidence/006-frontend-verification.md`).
+- **Result:** All 10 caught.
+- **Trap:** Component tests that changed a plain property on a host component did not re-render under Angular's zoneless change detection and failed, although the component was right. Rewritten to drive the component's inputs directly.
+
+## R-028 – Found by looking at the screens, not by any test
+
+- **Observation:** The rule preview read "Of the last 10 natural disasters events".
+- **Decision:** Replaced the label with a proper noun phrase per category. Lesson: passing assertions say nothing about wording, so every screenshot was opened and read.

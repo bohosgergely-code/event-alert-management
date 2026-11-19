@@ -44,7 +44,7 @@
             "name": "category",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+              "$ref": "#/components/schemas/EventCategory"
             }
           },
           {
@@ -86,17 +86,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[EventSummary, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfEventSummary"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[EventSummary, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfEventSummary"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[EventSummary, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfEventSummary"
                 }
               }
             }
@@ -162,7 +162,7 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.NotificationStatus"
+              "$ref": "#/components/schemas/NotificationStatus"
             }
           },
           {
@@ -204,17 +204,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[AdminNotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfAdminNotificationResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[AdminNotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfAdminNotificationResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[AdminNotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfAdminNotificationResponse"
                 }
               }
             }
@@ -969,7 +969,7 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.NotificationStatus"
+              "$ref": "#/components/schemas/NotificationStatus"
             }
           },
           {
@@ -997,17 +997,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[NotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfNotificationResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[NotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfNotificationResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResult`1[[NotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/PagedResultOfNotificationResponse"
                 }
               }
             }
@@ -1307,16 +1307,33 @@
   "components": {
     "schemas": {
       "AdminLoginRequest": {
+        "required": [
+          "key"
+        ],
         "type": "object",
         "properties": {
           "key": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AdminNotificationResponse": {
+        "required": [
+          "attemptCount",
+          "attempts",
+          "channelId",
+          "channelName",
+          "channelType",
+          "createdAt",
+          "eventId",
+          "eventTitle",
+          "id",
+          "ruleId",
+          "ruleName",
+          "status",
+          "userEmail"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1324,7 +1341,7 @@
             "format": "uuid"
           },
           "status": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.NotificationStatus"
+            "$ref": "#/components/schemas/NotificationStatus"
           },
           "suppressedReason": {
             "type": "string",
@@ -1353,44 +1370,48 @@
             "format": "uuid"
           },
           "ruleName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "userEmail": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "channelId": {
             "type": "string",
             "format": "uuid"
           },
           "channelType": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "channelName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventId": {
             "type": "string",
             "format": "uuid"
           },
           "eventTitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "attempts": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AttemptResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "AdminRuleResponse": {
+        "required": [
+          "category",
+          "channelCount",
+          "cooldownSeconds",
+          "id",
+          "isEnabled",
+          "minSeverity",
+          "name",
+          "userEmail"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1398,15 +1419,13 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "userEmail": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "minSeverity": {
             "type": "integer",
@@ -1432,6 +1451,13 @@
         "additionalProperties": false
       },
       "AdminUserResponse": {
+        "required": [
+          "channels",
+          "createdAt",
+          "email",
+          "id",
+          "rules"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1439,8 +1465,7 @@
             "format": "uuid"
           },
           "email": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -1457,7 +1482,21 @@
         },
         "additionalProperties": false
       },
+      "AttemptOutcome": {
+        "enum": [
+          "Success",
+          "TransientFailure",
+          "PermanentFailure"
+        ],
+        "type": "string"
+      },
       "AttemptResponse": {
+        "required": [
+          "attemptNumber",
+          "durationMs",
+          "outcome",
+          "startedAt"
+        ],
         "type": "object",
         "properties": {
           "attemptNumber": {
@@ -1473,7 +1512,7 @@
             "format": "int32"
           },
           "outcome": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.AttemptOutcome"
+            "$ref": "#/components/schemas/AttemptOutcome"
           },
           "errorMessage": {
             "type": "string",
@@ -1483,6 +1522,13 @@
         "additionalProperties": false
       },
       "ChannelResponse": {
+        "required": [
+          "id",
+          "isEnabled",
+          "name",
+          "settingsMasked",
+          "type"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1490,19 +1536,16 @@
             "format": "uuid"
           },
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "isEnabled": {
             "type": "boolean"
           },
           "settingsMasked": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastTestedAt": {
             "type": "string",
@@ -1517,11 +1560,15 @@
         "additionalProperties": false
       },
       "ChannelTypeResponse": {
+        "required": [
+          "isEnabled",
+          "isRegistered",
+          "type"
+        ],
         "type": "object",
         "properties": {
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "isEnabled": {
             "type": "boolean"
@@ -1533,15 +1580,19 @@
         "additionalProperties": false
       },
       "CreateChannelRequest": {
+        "required": [
+          "isEnabled",
+          "name",
+          "settings",
+          "type"
+        ],
         "type": "object",
         "properties": {
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "settings": { },
           "isEnabled": {
@@ -1550,15 +1601,7 @@
         },
         "additionalProperties": false
       },
-      "EventAlertManagement.Core.Domain.AttemptOutcome": {
-        "enum": [
-          "Success",
-          "TransientFailure",
-          "PermanentFailure"
-        ],
-        "type": "string"
-      },
-      "EventAlertManagement.Core.Domain.EventCategory": {
+      "EventCategory": {
         "enum": [
           "News",
           "Markets",
@@ -1566,18 +1609,17 @@
         ],
         "type": "string"
       },
-      "EventAlertManagement.Core.Domain.NotificationStatus": {
-        "enum": [
-          "Pending",
-          "Sending",
-          "Retrying",
-          "Sent",
-          "Failed",
-          "Suppressed"
-        ],
-        "type": "string"
-      },
       "EventSummary": {
+        "required": [
+          "category",
+          "id",
+          "isSimulated",
+          "occurredAt",
+          "severity",
+          "sourceKey",
+          "summary",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1585,19 +1627,17 @@
             "format": "uuid"
           },
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "severity": {
             "type": "integer",
             "format": "int32"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "summary": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "url": {
             "type": "string",
@@ -1612,8 +1652,7 @@
             "format": "date-time"
           },
           "sourceKey": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "isSimulated": {
             "type": "boolean"
@@ -1622,18 +1661,22 @@
         "additionalProperties": false
       },
       "InjectEventRequest": {
+        "required": [
+          "category",
+          "severity",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "severity": {
             "type": "integer",
             "format": "int32"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "summary": {
             "type": "string",
@@ -1669,6 +1712,11 @@
         "additionalProperties": false
       },
       "InjectEventResponse": {
+        "required": [
+          "newEvents",
+          "notificationsCreated",
+          "notificationsSuppressed"
+        ],
         "type": "object",
         "properties": {
           "newEvents": {
@@ -1687,16 +1735,24 @@
         "additionalProperties": false
       },
       "LoginRequest": {
+        "required": [
+          "email"
+        ],
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "MeResponse": {
+        "required": [
+          "displayName",
+          "email",
+          "id",
+          "role"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1704,21 +1760,32 @@
             "format": "uuid"
           },
           "email": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "displayName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "role": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "NotificationResponse": {
+        "required": [
+          "attemptCount",
+          "channelId",
+          "channelName",
+          "channelType",
+          "createdAt",
+          "eventId",
+          "eventSeverity",
+          "eventTitle",
+          "id",
+          "ruleId",
+          "ruleName",
+          "status"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1726,7 +1793,7 @@
             "format": "uuid"
           },
           "status": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.NotificationStatus"
+            "$ref": "#/components/schemas/NotificationStatus"
           },
           "suppressedReason": {
             "type": "string",
@@ -1759,28 +1826,24 @@
             "format": "uuid"
           },
           "ruleName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "channelId": {
             "type": "string",
             "format": "uuid"
           },
           "channelName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "channelType": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventId": {
             "type": "string",
             "format": "uuid"
           },
           "eventTitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventSeverity": {
             "type": "integer",
@@ -1789,7 +1852,27 @@
         },
         "additionalProperties": false
       },
+      "NotificationStatus": {
+        "enum": [
+          "Pending",
+          "Sending",
+          "Retrying",
+          "Sent",
+          "Failed",
+          "Suppressed"
+        ],
+        "type": "string"
+      },
       "OverviewResponse": {
+        "required": [
+          "events",
+          "failedNotifications",
+          "notificationsLast24h",
+          "recentFailures",
+          "rules",
+          "unhealthySources",
+          "users"
+        ],
         "type": "object",
         "properties": {
           "users": {
@@ -1809,8 +1892,7 @@
             "additionalProperties": {
               "type": "integer",
               "format": "int32"
-            },
-            "nullable": true
+            }
           },
           "failedNotifications": {
             "type": "integer",
@@ -1824,21 +1906,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminNotificationResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
-      "PagedResult`1[[AdminNotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]": {
+      "PagedResultOfAdminNotificationResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminNotificationResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -1855,15 +1941,20 @@
         },
         "additionalProperties": false
       },
-      "PagedResult`1[[EventSummary, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]": {
+      "PagedResultOfEventSummary": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventSummary"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -1880,15 +1971,20 @@
         },
         "additionalProperties": false
       },
-      "PagedResult`1[[NotificationResponse, EventAlertManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]": {
+      "PagedResultOfNotificationResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NotificationResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -1906,6 +2002,10 @@
         "additionalProperties": false
       },
       "PollResponse": {
+        "required": [
+          "newEvents",
+          "success"
+        ],
         "type": "object",
         "properties": {
           "success": {
@@ -1923,15 +2023,18 @@
         "additionalProperties": false
       },
       "PresetResponse": {
+        "required": [
+          "description",
+          "name",
+          "template"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "template": {
             "$ref": "#/components/schemas/RuleRequestTemplate"
@@ -1940,6 +2043,11 @@
         "additionalProperties": false
       },
       "PreviewResponse": {
+        "required": [
+          "eventsChecked",
+          "matches",
+          "samples"
+        ],
         "type": "object",
         "properties": {
           "eventsChecked": {
@@ -1954,21 +2062,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventSummary"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "RuleRequest": {
+        "required": [
+          "category",
+          "channelIds",
+          "cooldownSeconds",
+          "isEnabled",
+          "minSeverity",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "minSeverity": {
             "type": "integer",
@@ -1989,17 +2103,22 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "RuleRequestTemplate": {
+        "required": [
+          "category",
+          "cooldownSeconds",
+          "filters",
+          "minSeverity"
+        ],
         "type": "object",
         "properties": {
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "minSeverity": {
             "type": "integer",
@@ -2014,6 +2133,16 @@
         "additionalProperties": false
       },
       "RuleResponse": {
+        "required": [
+          "category",
+          "channelIds",
+          "cooldownSeconds",
+          "filters",
+          "id",
+          "isEnabled",
+          "minSeverity",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -2021,11 +2150,10 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "minSeverity": {
             "type": "integer",
@@ -2049,13 +2177,22 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "SourceResponse": {
+        "required": [
+          "category",
+          "consecutiveFailures",
+          "health",
+          "id",
+          "isEnabled",
+          "key",
+          "name",
+          "pollIntervalSeconds"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -2063,15 +2200,13 @@
             "format": "uuid"
           },
           "key": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "category": {
-            "$ref": "#/components/schemas/EventAlertManagement.Core.Domain.EventCategory"
+            "$ref": "#/components/schemas/EventCategory"
           },
           "isEnabled": {
             "type": "boolean"
@@ -2099,21 +2234,23 @@
             "format": "int32"
           },
           "health": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "TestResultResponse": {
+        "required": [
+          "outcome",
+          "success"
+        ],
         "type": "object",
         "properties": {
           "success": {
             "type": "boolean"
           },
           "outcome": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "error": {
             "type": "string",
@@ -2123,19 +2260,22 @@
         "additionalProperties": false
       },
       "TokenResponse": {
+        "required": [
+          "expiresAt",
+          "role",
+          "token"
+        ],
         "type": "object",
         "properties": {
           "token": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "expiresAt": {
             "type": "string",
             "format": "date-time"
           },
           "role": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -2158,6 +2298,9 @@
         "additionalProperties": false
       },
       "UpdateChannelTypeRequest": {
+        "required": [
+          "isEnabled"
+        ],
         "type": "object",
         "properties": {
           "isEnabled": {

@@ -79,7 +79,9 @@ builder.Services.AddSwaggerGen(o =>
     {
         [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = Array.Empty<string>(),
     });
-    o.CustomSchemaIds(t => t.FullName!.Replace("EventAlertManagement.Api.Dtos.", "").Replace('+', '.'));
+    o.SupportNonNullableReferenceTypes();
+    o.SchemaFilter<RequiredNonNullableSchemaFilter>();
+    o.CustomSchemaIds(SchemaNames.For);
 });
 
 builder.Services.AddEventAlertInfrastructure(builder.Configuration, runBackgroundWorkers: builder.Configuration.GetValue("Workers:Enabled", true));

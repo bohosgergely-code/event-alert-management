@@ -11,6 +11,10 @@ public static class DbInitializer
     {
         await db.Database.EnsureCreatedAsync(ct);
 
+        // The poller, the dispatcher and web requests all write to this one file. Write-ahead logging lets readers
+        // and a writer work at the same time instead of blocking each other. The setting is stored in the file.
+        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;", ct);
+
         if (!await db.Sources.AnyAsync(s => s.Key == SimulatorSource.SourceKey, ct))
         {
             db.Sources.Add(new Source

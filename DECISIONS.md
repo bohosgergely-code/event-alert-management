@@ -330,3 +330,44 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - The development settings file contains a placeholder signing key and admin key so the app runs out of the box. They are for local use only and must be replaced elsewhere. This is stated in the README.
 - The rate limiter keeps its counters in memory, so it resets on restart and does not span several instances. Fine for one process.
 - Anyone who knows (or guesses) an email address can sign in as that user. An email-verified or password-based flow is the production answer and remains a non-goal.
+
+---
+
+## ADR-017: Angular 22, pinned one week behind the newest release
+
+**Status:** Accepted
+
+**Context.** The scaffolding tool installs whatever version is newest. When this frontend was started, Angular 22.3.0 had been published the same day. A same-day release is the one most likely to contain mistakes that are fixed days later, and the scaffold's version ranges would have picked it up silently.
+
+**Options.**
+1. Accept the newest version the ranges resolve to.
+2. Pin every Angular package to the same exact version from a few days earlier (22.2.7).
+3. Use the previous major version.
+
+**Decision.** Option 2, with exact versions in `package.json` and a committed lock file.
+
+**Consequences.**
+- Builds are reproducible and not at the mercy of a release made yesterday.
+- All Angular packages must be changed together. Changing one at a time causes version conflicts, as happened while pinning.
+- Angular 22 uses TypeScript 6 and Vitest. The OpenAPI type generator (`openapi-typescript` 7) supports only TypeScript 5, so it is run on demand through `npx` with its own TypeScript instead of being forced into the project's dependencies. The generated file is committed.
+- Option 3 was rejected because the previous major is close to the end of its support period.
+
+---
+
+## ADR-018: Frontend structure and session handling
+
+**Status:** Accepted
+
+**Context.** The interface must stay small enough to finish and still be honest about security and failure.
+
+**Decisions.**
+- Standalone components, lazy-loaded routes, signals for anything that arrives asynchronously, template forms for input. No UI component library: a small hand-written stylesheet with light and dark colours.
+- Types for requests and responses are generated from the API description (types only, no generated client). One `ApiService` holds every call.
+- The signed-in session lives in `sessionStorage`. The token is attached by an interceptor only to calls under `/api/`, never to sign-in calls or other addresses. A 401 anywhere except sign-in ends the session. An expired session counts as signed out even before the server says so.
+- Route guards send users and administrators to the pages that fit them. They are a convenience: the API enforces access (ADR-015).
+- Screens that change by themselves (deliveries, history) refresh every few seconds.
+- During development `/api` is proxied to the API, so no cross-origin setup is needed. For other setups the API allows the origins listed in `Cors:Origins`.
+
+**Consequences.**
+- A token in browser storage can be read by any script that runs on the page. There is no user-supplied HTML anywhere in the application (Angular escapes all bound text), which lowers the risk, but it is a known limit of this scope.
+- No component library means the look is plain. Accessibility basics are covered (labels, focus outlines, roles for alerts, colour contrast in both colour schemes) but not audited.
