@@ -4,7 +4,7 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 
 ## Summary
 
-34 entries. Entries marked open are also listed in [docs/OUTCOME.md](docs/OUTCOME.md).
+38 entries. Entries marked open are also listed in [docs/OUTCOME.md](docs/OUTCOME.md).
 
 | ID | What | State |
 |---|---|---|
@@ -42,6 +42,10 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 | R-032 | Small things the build and a screenshot caught | Recorded |
 | R-033 | The follow-up: a proper form for the new channel (separate commit on purpose) | Recorded |
 | R-034 | Final pass: five things a reviewer would have found | Recorded |
+| R-035 | The independent fresh-context review (the step the plan promised and I had skipped) | Recorded |
+| R-036 | What the independent eyes found that my own methods had not | Recorded |
+| R-037 | Findings I chose not to fix, and why | Recorded |
+| R-038 | Slips of mine while fixing | Recorded |
 
 ---
 
@@ -279,3 +283,31 @@ Every entry follows the same shape: what the AI produced or claimed, the check p
 - **First run broken by a port.** A plain `dotnet run` listened on port 5215 while the web interface proxies to 5080, so anyone following the README would get a working API and a frontend that could not reach it. The launch profile now uses 5080, and I followed the README literally (API, web, proxy, user and admin sign-in) to confirm.
 - **Stale statements.** Status lines, test counts and "not started (hosts unreachable)" no longer matched reality. Corrected, with a clearer status for each assumption.
 - **What passed without changes:** a fresh clone from GitHub reproduced 383 backend and 69 frontend tests and a clean production build from nothing; no broken links among 23 markdown files; no secrets in tracked files; `tools/verify.sh` checks that the committed API description and generated types still match the running API.
+
+## R-035 – The independent fresh-context review (the step the plan promised and I had skipped)
+
+- **What:** Three fresh AI reviewers with no memory of the work, each on a plain copy of the code with the authors' assessments and the git history removed. Backend pipeline, security, and frontend with contract, tests and product fit. Full method, counts and a row for every finding: [evidence/independent-review/README.md](evidence/independent-review/README.md).
+- **Check on the reviewers:** none of their claims was accepted on their word. Backend and frontend claims were reproduced with my own probes; security claims were turned into tests written first, 22 of 24 of which failed on the old code. Each fix was then reverted to confirm a test notices.
+- **Result:** 40 findings: 19 fixed, 9 partly fixed, 11 documented as not fixed with the reason, and one result where nothing was wrong (the address protection could not be bypassed and the ownership checks held).
+- **Decision:** Findings fixed in three commits (pipeline, security, frontend), each with regression tests. The ones left are listed in the outcome page.
+
+## R-036 – What the independent eyes found that my own methods had not
+
+- **Observation:** By the time of the review I had run about 66 deliberate-bug checks, real end-to-end runs and a fresh-clone reproduction. The reviewers still found important problems.
+- **What they were:** a cooldown that hid the most severe event (a design flaw); alerts that ignored a rule or channel switched off after queueing; an ingest race that failed 19 of 20 times; a rate limit that parallel requests walk through; secrets written to the log by default HTTP logging; unbounded input; a screen that could show the answer to the wrong filter; a checkbox that lied after a failed request.
+- **Pattern:** nearly all are *interactions* (a limit with concurrency, a feature with a deletion, a filter with a late answer, a default setting with a secret). My tests were strong on single behaviours and thin on combinations, and I had checked the code against my own idea of how it is used.
+- **Lesson:** mutation checks measure whether tests notice a change in code that I wrote; they cannot find what I never thought to test. A second reader, working only from the specification, can.
+
+## R-037 – Findings I chose not to fix, and why
+
+- **Rule deletion erases history; no retention; parallel or fair delivery; Slack text formatting; some accessibility; channels cannot be edited.** Each needs a data-model or design decision (what to copy onto an alert before its rule is deleted; what may be removed without letting old items notify again). Doing them late and fast risked more than they fix. They are listed in the outcome page and the README, and the delete confirmation tells the user what deleting a rule does.
+- **Substring keyword matching** was kept on purpose (whole-word matching would stop "flood" matching "flooding"); the editor says so.
+- **The unexplained test failure** in one reviewer's own baseline run did not reproduce in twelve runs here.
+
+## R-038 – Slips of mine while fixing
+
+- A test for overlapping polls passed even without the fix (the simulator gives its events to whichever poll asks first). It could not fail, so it was deleted.
+- One "revert" check did not compile and printed nothing. I nearly counted silence as success; redone.
+- A first version of one test ended with an assertion that cannot fail. Rewritten to click and look at the real text.
+- A mail server left over from an earlier run held its port, and the browser journey failed for that reason for a while. The screenshot showed the real message.
+- A page-level probe printed nothing because the test runner hides console output; the readings were taken through a deliberately failing assertion instead.

@@ -1,6 +1,6 @@
 # How the AI was used, and how its output was checked
 
-The brief asked for the process, not just the result. This page is the short version. The long version is [REVIEW_LOG.md](REVIEW_LOG.md) (34 entries) and the `evidence/` folder.
+The brief asked for the process, not just the result. This page is the short version. The long version is [REVIEW_LOG.md](REVIEW_LOG.md) (38 entries) and the `evidence/` folder.
 
 ## How the work was directed
 
@@ -21,10 +21,11 @@ The phases ran in this order, each with its own commit and prompt file: plan, fr
 **Nothing counts as working until something other than the code that was just written has said so.** That "something" was, in rough order of how often it found problems:
 
 1. **A real run.** Starting the actual application, a real SMTP server and a real browser, and reading the server log. This found the problems that tests could not (the request validation that compiled but returned 500 on every request, a screen that never refreshed).
-2. **Deliberate bugs ("mutation checks").** Break one line, run the suite, and see whether a test fails. 66 bugs were injected across the matcher, pipeline, security code, API authorization, frontend logic and the webhook guard. 64 were caught; 2 survived and both turned out to be harmless duplicates of other checks (REVIEW_LOG R-007, R-033). Every time a suite passed on its first run, this was done before trusting it.
+2. **Deliberate bugs ("mutation checks").** Break one line, run the suite, and see whether a test fails. 97 deliberate bugs or reverted fixes were tried across the matcher, pipeline, security code, API authorization, frontend logic, the webhook guard and every fix that came out of the independent review. 94 were caught; 3 survived and all three turned out to be harmless duplicates of other checks (REVIEW_LOG R-007, R-033, R-035). Every time a suite passed on its first run, this was done before trusting it.
 3. **Independent calculations.** Expected values computed outside the code under test: the earthquake counts and severities from a Python script over the real captured feed, HMAC values from an RFC test vector and Python, address classification compared with Python's `ipaddress` module.
 4. **Real data, captured first.** The earthquake parser was written against a response captured from the live service, not against a sample the AI imagined.
 5. **Reading the screenshots.** Passing assertions say nothing about wording or layout; reading them found a grammar mistake and a secret left in a form.
+6. **An independent reviewer in a fresh context** (added at the end, see below). It found what none of the above had: problems in combinations of features, which my own tests were thin on.
 
 ## What the AI got wrong (and how it was caught)
 
@@ -41,20 +42,31 @@ Not exhaustive. See the summary table in the review log for all entries.
 | Unusable generated output | API types with every field optional | Reading the generated file | R-020 |
 | Library helper as a policy | Python's "is this address global" calls NAT64 and multicast addresses global | Comparing against the stricter table | R-030 |
 | A claim from memory | How Slack answers errors and rate limits | Reading Slack's documentation | R-008 |
+| A design flaw in the product logic | A cooldown that suppressed the most severe event and sent the trivial one | The independent reviewer, then my own probe | R-036 |
+| Two things at once | Overlapping ingests failed on the unique key (19 of 20 rounds); a rate limit that parallel requests walked through | The independent reviewers | R-036 |
+| A safe-looking default | Default HTTP logging wrote webhook and Slack addresses, which are secrets, to the log on every send | The independent security reviewer | R-036 |
+| A screen showing the wrong thing | A list showing the answer to an older filter; a checkbox that lied after a failed request | The independent frontend reviewer | R-036 |
 | A design flaw found only in real data | The first poll would alert on a whole day of old earthquakes | Examining a real response | R-010 |
 | Newer API than the target | A .NET 9 method in a .NET 8 project | The compiler | R-032 |
 
 Several apparent bugs were not bugs: the API had not been started (R-024), the rate limiter was working (R-025), a test shared state with another (R-017). Those are logged too, because time spent on a phantom is also a cost.
 
-## Where I did not follow my own plan
+## The independent review
 
-The plan promised these. They did not all happen:
+The plan promised an independent reviewer in a fresh context, and the first version of this repository did not have one: mutation checks, independent calculations and real runs stood in for it, which I said was weaker. At the author's request it was then done properly.
 
-- **An independent reviewer in a fresh context was not used.** The plan called for a second AI pass that sees only the diff and the specification, to reduce self-agreement. What stood in for it is the list above: mutation checks, independent calculations and real runs. That is a weaker substitute for finding design blind spots (as opposed to implementation mistakes), and a reviewer running one can still do it.
+- **Three fresh agents** (backend pipeline, security, frontend with contract, tests and product fit), each given a plain copy of the code with my own assessments and the git history removed, so they could not lean on what I thought. Told to prove findings, not suspect them.
+- **Nothing accepted on their word.** Each claim was reproduced with my own probe, or turned into a test that failed on the old code, before a fix.
+- **Result:** 40 findings: 19 fixed, 9 partly fixed, 11 documented as not fixed with reasons, 1 result where nothing was wrong (the address protection could not be bypassed). Full table: [evidence/independent-review/README.md](evidence/independent-review/README.md).
+- **What it showed about my own work:** the problems it found were mostly interactions between features, not single behaviours. My tests were strong on the second kind and thin on the first, and I had tested against my own picture of how the system is used. Mutation checks measure whether tests notice a change in code I wrote. They cannot find what I never thought to test (REVIEW_LOG R-036).
+
+## Where I still fall short of the plan
+
 - **Mailpit was not used,** a small SMTP server stood in (R-009).
 - **Slack was never posted to a live webhook** and **the webhook was never sent over real TLS** (R-008, R-031).
 - **The news and market sources were not built** (ADR-020).
-- **One startup log line is unexplained** (R-026).
+- **One startup log line is unexplained** (R-026), and so is one test failure in a reviewer's own run that did not reproduce in twelve runs here.
+- **Eleven findings of the independent review were deliberately left** (listed with reasons in the outcome page).
 
 ## What not to trust without a human
 

@@ -56,6 +56,20 @@ public class CooldownPolicyTests
     }
 
     [Fact]
+    public void Cooldown_is_measured_in_real_time_across_a_daylight_saving_change()
+    {
+        // Clocks in Europe jump forward at 01:00 UTC on 29 March 2026. Everything here is UTC, so an hour is an hour.
+        var start = new DateTime(2026, 3, 29, 0, 30, 0, DateTimeKind.Utc);
+        var rule = new AlertRule { CooldownSeconds = 3600, LastNotifiedAt = start };
+        Assert.True(CooldownPolicy.IsInCooldown(rule, new DateTime(2026, 3, 29, 1, 29, 59, DateTimeKind.Utc), out _));
+        Assert.False(CooldownPolicy.IsInCooldown(rule, new DateTime(2026, 3, 29, 1, 30, 0, DateTimeKind.Utc), out _));
+        // and the autumn change, where a local clock would repeat an hour
+        var autumn = new AlertRule { CooldownSeconds = 3600, LastNotifiedAt = new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc) };
+        Assert.True(CooldownPolicy.IsInCooldown(autumn, new DateTime(2026, 10, 25, 1, 29, 59, DateTimeKind.Utc), out _));
+        Assert.False(CooldownPolicy.IsInCooldown(autumn, new DateTime(2026, 10, 25, 1, 30, 0, DateTimeKind.Utc), out _));
+    }
+
+    [Fact]
     public void Exactly_at_window_end_is_allowed()
         => Assert.False(CooldownPolicy.IsInCooldown(new AlertRule { CooldownSeconds = 600, LastNotifiedAt = Now }, Now.AddSeconds(600), out _));
 }

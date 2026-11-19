@@ -130,13 +130,16 @@ Key properties:
 ```mermaid
 stateDiagram-v2
     [*] --> Pending: match created
-    [*] --> Suppressed: match inside cooldown
+    [*] --> Suppressed: match inside cooldown (unless more severe)
+    Pending --> Suppressed: rule, channel or channel type switched off before delivery
+    Retrying --> Suppressed: same, before the next attempt
     Pending --> Sending: dispatcher claims it
     Sending --> Sent: success
     Sending --> Retrying: transient failure, attempts left
     Retrying --> Sending: retry time reached
     Sending --> Failed: permanent failure or attempts exhausted
     Failed --> Pending: admin retries manually
+    Suppressed --> Pending: admin sends it anyway
     Suppressed --> [*]
     Sent --> [*]
 ```
@@ -186,10 +189,10 @@ One configured destination for one user, for example "my Slack channel" or "my w
 | Category | `News`, `Markets`, `Disasters`. |
 | MinSeverity | 1–5. |
 | FiltersJson | Category-specific filters, validated against a typed model (see below). (ADR-010) |
-| CooldownSeconds | Minimum time between notifications for this rule. 0 = none. |
+| CooldownSeconds | Minimum time between notifications for this rule. 0 = none. A more severe event than the one that started the window is not held back (ADR-021). |
 | IsEnabled | |
 | Channels | Many-to-many link to the user's ChannelConfigs. At least one required. |
-| LastNotifiedAt | Used for cooldown. |
+| LastNotifiedAt, LastNotifiedSeverity | Used for cooldown and escalation. |
 
 **Filters by category (typed):**
 
@@ -353,7 +356,7 @@ The admin notifications screen is built before the other admin screens, because 
 | Concern | Approach |
 |---|---|
 | **Time** | UTC everywhere. All time-dependent code uses `IClock`. |
-| **Secrets** | Channel settings encrypted with ASP.NET Core Data Protection. Masked in API responses, logs and UI. Errors are sanitized before storage. (ADR-014) |
+| **Secrets** | Channel settings encrypted with ASP.NET Core Data Protection (the keys are stored unencrypted next to the database, ADR-014). Masked in API responses and in the UI. Request logging is removed for the webhook and Slack clients, because their addresses contain secrets (an outside reviewer found them in the log). Errors are sanitized before storage. |
 | **Untrusted text** | Event text is escaped at the point of output for each format (HTML, Slack, JSON). Never stored pre-escaped. |
 | **SSRF** | Outbound URLs from users are allow-listed by host and scheme; private ranges blocked for the generic webhook. |
 | **Authorization** | Every user endpoint filters by the signed-in user's id. Tested with a second user attempting to read the first user's data. |

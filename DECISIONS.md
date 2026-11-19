@@ -67,6 +67,8 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - Retries use backoff with a maximum number of attempts. After that, the status is `Failed` and an admin can retry manually.
 - Delivery is at-least-once, so a rare duplicate send after a crash is possible. We accept this and document it.
 - A broker could replace the worker later because the dispatcher sits behind an interface.
+- **Added after the independent review:** the dispatcher decides with the state of the rule and channel *at send time*. A rule switched off, a channel paused or a channel type switched off after an alert was queued gives a `Suppressed` alert (never sent, visible with its reason, and an administrator can send it on request), not a delivery failure.
+- **Added after the independent review:** deleting a rule deletes its alerts, including the history of those already sent, because they belong to the rule. This was reproduced as a real loss of history. It is a known limit: keeping the history would mean copying the rule name and owner onto every alert. The delete confirmation says it.
 
 ---
 
@@ -152,7 +154,7 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 
 ## ADR-008: De-duplication and cooldown
 
-**Status:** Accepted (refined by ADR-009: uniqueness is per rule, event and channel)
+**Status:** Accepted (refined by ADR-009: uniqueness is per rule, event and channel; and by ADR-021: how the cooldown treats severity)
 
 **Context.** Feeds repeat items, polling can see the same item twice, and busy periods can produce bursts.
 
@@ -269,6 +271,8 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - Permanent failures such as a revoked webhook are not retried pointlessly.
 - SQLite allows a single writer, so one dispatcher also avoids lock contention.
 - Retry delays are configurable so tests and demos do not wait for an hour.
+- Claiming is atomic, but saving after a send does not check that this dispatcher still owns the alert, and the poller has no equivalent guard across processes. This is **not ready for several instances**; the per-source lock on ingestion (ADR-021 context) covers one process only.
+- Sending is one at a time. A destination that stalls delays everyone behind it (up to the timeout, 10 seconds for webhooks). Fan-out per rule is capped at five channels, which bounds the damage but is not fairness.
 
 ---
 
@@ -290,6 +294,7 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - Keys must persist across restarts, or stored settings become unreadable. The key location is part of the run instructions.
 - Secrets can no longer be searched in the database, so lookups use ids, not values.
 - An external secrets manager would be the production answer. Not in scope.
+- **Added after the independent review:** the keys that protect the settings are stored unencrypted in a folder next to the database (the start-up log warns about it). A backup of the application folder therefore contains both the data and the means to read it, so the claim "protects against backups" above holds only if the keys are kept apart. An empty key location silently uses throw-away keys, after which every stored channel reads as unreadable.
 
 ---
 
@@ -401,6 +406,8 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 - The secret and the path of the URL are never shown after saving (only the host).
 - A destination that is reachable only from inside a company network cannot be used. That is the point, and also a limit.
 - The live path over real TLS to a public server has not been exercised in this environment (see REVIEW_LOG R-031).
+- **Added after the independent review:** the text check on the address is only the first line. An outside reviewer showed that several odd spellings of internal addresses passed it and were stopped only by the connection guard. They are now refused earlier too (unusual spellings folded, numeric host names refused), but the connection guard remains the decisive protection, and `Webhook:UseSystemProxy=true` switches it off.
+- Request logging is removed for the webhook and Slack clients: the default would print the full address, which contains secrets, on every send.
 
 ---
 
@@ -425,3 +432,26 @@ Status values: **Accepted**, **Superseded**, **Proposed**.
 **Consequences.**
 - The product, as delivered, watches the real world for natural disasters only. This is the largest gap against the brief's examples and is stated in the README first.
 - Assumption A7 (news has no reliable severity) is untested against real news, because no real news was ever read.
+
+---
+
+## ADR-021: A cooldown must not hide the event that matters most
+
+**Status:** Accepted. Refines ADR-008. Came out of the independent review.
+
+**Context.** A rule's cooldown suppresses further alerts for a while to reduce noise. As first built, the first matching event took the slot, whatever its importance. An outside reviewer reproduced the consequence: with a one hour cooldown and two events arriving together, a minor event (severity 1) was sent and a catastrophe (severity 5) was suppressed. That defeats the point of the product.
+
+**Options.**
+1. Leave it and document it.
+2. Process the most severe event first, and let an event that is more severe than the one that started the window through ("escalation").
+3. Remove cooldown.
+
+**Decision.** Option 2. Within a batch, events are matched most severe first (earliest first among equals). The severity that started the window is stored on the rule (`LastNotifiedSeverity`). An event with a higher severity is never held back; an equal or lower one is, as before.
+
+**Consequences.**
+- Several events arriving together produce one alert, for the most severe, not for the earliest.
+- A user in a long cooldown still hears about something worse. A sequence 2, then 4, then 3 gives alerts for 2 and 4; the 3 is held back because the window is now at 4.
+- A suppressed alert is still recorded, visible with its reason, and an administrator can send it on request.
+- The cooldown window still starts when the alert is queued, not when it is delivered, and a rule edit does not reset it (both noted by the reviewer, left as they are).
+- The data model changed (one column). The database is created, not migrated, so an existing local database file has to be deleted (the README says so).
+

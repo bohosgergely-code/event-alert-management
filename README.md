@@ -9,7 +9,7 @@ It was built from a deliberately vague product brief (*"notify users when someth
 | | |
 |---|---|
 | **Real events** | **Natural disasters only**, from the live USGS earthquake feed. |
-| **News and markets** | Fully supported by rules, matching, delivery and the admin area, but **no live feed is connected**. They react to test events an administrator creates. The rule editor says so. See [ADR-020](DECISIONS.md). |
+| **News and markets** | The rule engine, matching, delivery and admin area handle them, but **no live feed is connected**: they react only to test events an administrator creates. The rule editor says so. See [ADR-020](DECISIONS.md). |
 | **Channels** | Email (SMTP), Slack (incoming webhook), generic signed webhook. Adding a channel took three new files and one added line ([evidence](evidence/007-third-channel.md)). |
 | **Users** | Rules (with ready-made examples and a "which recent events would match" preview), channels with a test button, a history of every alert and what happened to it. |
 | **Admins** | Overview, every delivery with each attempt and a retry button, test events, source health with "check now", a switch to turn a channel type off for everyone. |
@@ -17,11 +17,12 @@ It was built from a deliberately vague product brief (*"notify users when someth
 ## Start here (for reviewers)
 
 1. [docs/OUTCOME.md](docs/OUTCOME.md): the plan against what happened, the checklist, what is open.
-2. [AI-USAGE.md](AI-USAGE.md): how the AI was directed, what it got wrong, where I did not follow my own plan.
-3. [REVIEW_LOG.md](REVIEW_LOG.md): 34 entries, summary table first.
-4. [DECISIONS.md](DECISIONS.md): 20 decisions with the options that were rejected.
-5. [docs/PLAN.md](docs/PLAN.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the plan, the assumptions behind the brief, the design.
-6. [evidence/](evidence/) (tables, real messages, screenshots) and [prompts/](prompts/) (one file per exchange).
+2. [AI-USAGE.md](AI-USAGE.md): how the AI was directed, what it got wrong, where I still fall short of the plan.
+3. [evidence/independent-review/](evidence/independent-review/README.md): an independent fresh-context review (three reviewers, 40 findings, what was fixed and what was not).
+4. [REVIEW_LOG.md](REVIEW_LOG.md): 38 entries, summary table first.
+5. [DECISIONS.md](DECISIONS.md): 21 decisions with the options that were rejected.
+6. [docs/PLAN.md](docs/PLAN.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the plan, the assumptions behind the brief, the design.
+7. [evidence/](evidence/) (tables, real messages, screenshots) and [prompts/](prompts/) (one file per exchange).
 
 ## Run it
 
@@ -45,8 +46,8 @@ Sign in as a user with any email address. The admin area is at `/admin/login`.
 
 ```bash
 bash tools/verify.sh        # everything below in one go
-dotnet test                 # backend: 383 tests (5 more need real services and are skipped by default)
-cd src/EventAlertManagement.Web && npm test    # frontend: 69 tests
+dotnet test                 # backend: 418 tests (5 more need real services and are skipped by default)
+cd src/EventAlertManagement.Web && npm test    # frontend: 94 tests
 ```
 
 A scripted journey in a real browser against the real stack is in [e2e/](e2e/). Opt-in checks against real services: `EAM_SMTP_TEST_PORT=1025` (real SMTP server) and `EAM_LIVE_TESTS=1` (live USGS).
@@ -55,7 +56,7 @@ A scripted journey in a real browser against the real stack is in [e2e/](e2e/). 
 
 The brief left almost everything open. The interpretation, the 18 assumptions with how each was checked, and the scope are in [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md). In short: "important" is defined by each user's rule, not by the system; events are polled, not streamed; there is no machine-learning scoring, no digests, no production-grade sign-in.
 
-## Known limits (all also in the review log)
+## Known limits (all also in the review log and the outcome page)
 
 - **Only natural disasters have a live source** (ADR-020).
 - **Sign-in is minimal and not production-safe:** knowing an email address is enough to act as that user (ADR-007, ADR-016). The session token lives in the browser's session storage.
@@ -66,3 +67,8 @@ The brief left almost everything open. The interpretation, the 18 assumptions wi
 - **News has no reliable importance level,** so keywords are the main filter there (A7). Severity tables and thresholds are starting values, never tuned on real use.
 - **Revised earthquake values are not re-notified:** the first version of an event is kept.
 - **One unexplained connection error line** can appear in the server log at startup (R-026).
+- **Deleting a rule also deletes the history of its alerts,** there is no retention (data grows without bound), and delivery is one at a time, so a stalling destination delays everyone. Fan-out per rule is capped at five channels.
+- **A cooldown never hides a more severe event** (ADR-021), but an alert queued before its rule or channel was switched off is suppressed, not sent.
+- **Late or revised earthquakes:** an event that first appears in the feed more than three hours after it happened is dropped, and a revised magnitude does not alert again.
+- **Keys that protect stored channel settings are kept unencrypted next to the database** (ADR-014). `dotnet run` uses the Development profile, which carries the placeholder secrets. The sign-in rate limit is per caller address, so behind a reverse proxy all users share one bucket until forwarded headers are configured.
+- **Keywords match anywhere in the text** ("war" also matches "software"). Channels cannot be edited, only paused, tested or deleted.
