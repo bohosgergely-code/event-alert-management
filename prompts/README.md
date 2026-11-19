@@ -1,0 +1,22 @@
+# Prompt history
+
+This folder keeps the prompts used while building the project, so the way AI was directed is visible and reviewable.
+
+## Convention
+
+One file per meaningful exchange, named `NNN-role-topic.md` (for example `001-framing-assumptions.md`). Each file contains:
+
+- **Role** – which AI role was used (interviewer, architect, implementer, test author, reviewer).
+- **Prompt** – the prompt as sent.
+- **Response (summary)** – what the AI produced, shortened. Full outputs go to `evidence/` when needed.
+- **What I checked** – the checks run on the output.
+- **Decision** – accepted, rejected or changed, and why.
+
+Rejected and failed attempts stay in the history. They are part of the evidence.
+
+## Index
+
+| File | Topic |
+|---|---|
+| [000-planning.md](000-planning.md) | Original assignment and first planning exchange |
+| [001-framing-assumptions.md](001-framing-assumptions.md) | Framing phase: assumptions, scope, first decision records |
