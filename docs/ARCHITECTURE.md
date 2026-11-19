@@ -197,7 +197,7 @@ One configured destination for one user, for example "my Slack channel" or "my w
 ### Source
 | Field | Notes |
 |---|---|
-| Id, Key (unique), Name, Category | Key such as `usgs-earthquakes`, `simulator`. |
+| Id, Key (unique), Name, Category | Key such as `usgs-earthquakes`, `simulator`. Category is empty for sources that produce several categories, such as the simulator. |
 | IsEnabled, PollIntervalSeconds | Admin-controllable. |
 | Cursor | Opaque position (for example "last seen time" or id). |
 | LastPollAt, LastSuccessAt, LastError, ConsecutiveFailures | Source health, shown to admins. |
@@ -264,9 +264,11 @@ Each source implements `IEventSource`, which receives its stored cursor and retu
 INotificationChannel
   Type            -> "Email" | "Slack" | "Webhook"
   ValidateSettings(settings) -> list of problems
-  Render(notification, event) -> channel-specific message
+  MaskSettings(settings)     -> display-safe text with secrets hidden
   SendAsync(message, settings) -> Success | TransientFailure | PermanentFailure
 ```
+
+Rendering is internal to each channel (it is not part of the contract), because the dispatcher never needs the rendered message. `MaskSettings` was added so the API can never return a secret by accident.
 
 | Channel | Behavior |
 |---|---|

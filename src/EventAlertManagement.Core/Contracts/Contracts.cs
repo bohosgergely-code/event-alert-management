@@ -31,7 +31,8 @@ public sealed record SourceFetchResult(IReadOnlyList<NormalizedEvent> Events, st
 public interface IEventSource
 {
     string Key { get; }
-    EventCategory Category { get; }
+    /// <summary>Null when the source can produce several categories.</summary>
+    EventCategory? Category { get; }
     Task<SourceFetchResult> FetchAsync(string? cursor, CancellationToken ct);
 }
 

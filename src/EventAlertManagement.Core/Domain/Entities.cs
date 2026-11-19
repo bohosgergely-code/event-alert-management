@@ -56,7 +56,9 @@ public class Source
     /// <summary>Stable key matching an <c>IEventSource.Key</c>, for example "simulator" or "usgs-earthquakes".</summary>
     public string Key { get; set; } = "";
     public string Name { get; set; } = "";
-    public EventCategory Category { get; set; }
+
+    /// <summary>Null for sources that produce several categories, such as the simulator.</summary>
+    public EventCategory? Category { get; set; }
     public bool IsEnabled { get; set; } = true;
     public int PollIntervalSeconds { get; set; } = 300;
 

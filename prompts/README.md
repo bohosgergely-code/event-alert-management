@@ -21,3 +21,4 @@ Rejected and failed attempts stay in the history. They are part of the evidence.
 | [000-planning.md](000-planning.md) | Original assignment and first planning exchange |
 | [001-framing-assumptions.md](001-framing-assumptions.md) | Framing phase: assumptions, scope, first decision records |
 | [002-design-architecture.md](002-design-architecture.md) | Design phase: architecture, data model, API, ADR-009 to ADR-014 |
+| [003-core-implementation.md](003-core-implementation.md) | Core implementation: domain, pipeline, channels, tests |
