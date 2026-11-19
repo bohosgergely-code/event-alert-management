@@ -16,7 +16,7 @@ The AI produced `docs/PLAN.md`: decisions for ten ambiguities in the brief, an a
 
 ## What I checked
 
-*(To be completed by the author.)*
+ - Reviewed the PLAND.md file and accepted it.
 
 ## Decision
 
