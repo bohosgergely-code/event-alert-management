@@ -32,7 +32,7 @@ import { Notice } from '../../shared/notice';
       @if (o.recentFailures.length === 0) { <div class="card empty">No failed deliveries. </div> }
       @else {
         <div class="scroll"><table>
-          <thead><tr><th>When</th><th>User</th><th>Event</th><th>Channel</th><th>Last error</th></tr></thead>
+          <thead><tr><th scope="col">When</th><th scope="col">User</th><th scope="col">Event</th><th scope="col">Channel</th><th scope="col">Last error</th></tr></thead>
           <tbody>
             @for (n of o.recentFailures; track n.id) {
               <tr>

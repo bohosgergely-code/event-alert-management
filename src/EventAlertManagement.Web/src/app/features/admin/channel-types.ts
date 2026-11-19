@@ -12,7 +12,7 @@ import { Notice } from '../../shared/notice';
     <p class="muted">Switch a whole delivery method off for everyone, for example during an incident. New matches are recorded as suppressed, and queued sends are held back until it is switched on again.</p>
     <app-notice [errors]="errors()" [message]="message()" />
     <div class="scroll"><table>
-      <thead><tr><th>Type</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th scope="col">Type</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
       <tbody>
         @for (t of types(); track t.type) {
           <tr>

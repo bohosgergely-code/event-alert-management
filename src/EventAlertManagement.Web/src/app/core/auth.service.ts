@@ -23,6 +23,9 @@ export class AuthService {
   readonly isSignedIn = computed(() => this.role() !== null);
   readonly isAdmin = computed(() => this.role() === 'Admin');
 
+  /** Shown once on the sign-in page, for example after the server ended the session. */
+  readonly notice = signal('');
+
   get token(): string | null { return this.valid(this.session())?.token ?? null; }
 
   login(email: string): Observable<TokenResponse> {
@@ -33,9 +36,10 @@ export class AuthService {
     return this.http.post<TokenResponse>('/api/auth/admin-login', { key }).pipe(tap((r) => this.store(r)));
   }
 
-  logout(redirect = true): void {
+  logout(redirect = true, notice = ''): void {
     const wasAdmin = this.isAdmin();
     this.session.set(null);
+    this.notice.set(notice);
     try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* storage may be unavailable */ }
     if (redirect) void this.router.navigateByUrl(wasAdmin ? '/admin/login' : '/login');
   }
@@ -43,6 +47,7 @@ export class AuthService {
   private store(r: TokenResponse): void {
     const s: Session = { token: r.token, role: r.role === 'Admin' ? 'Admin' : 'User', expiresAt: r.expiresAt };
     this.session.set(s);
+    this.notice.set('');
     try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { /* keep working in memory */ }
   }
 

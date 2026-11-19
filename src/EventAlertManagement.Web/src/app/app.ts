@@ -10,16 +10,18 @@ import { AuthService } from './core/auth.service';
       <a class="brand" routerLink="/">EventAlert</a>
       <nav aria-label="Main">
         @if (auth.role() === 'User') {
-          <a routerLink="/rules" routerLinkActive="active">Rules</a>
-          <a routerLink="/channels" routerLinkActive="active">Channels</a>
-          <a routerLink="/history" routerLinkActive="active">History</a>
+          <a routerLink="/rules" routerLinkActive="active" ariaCurrentWhenActive="page">Rules</a>
+          <a routerLink="/channels" routerLinkActive="active" ariaCurrentWhenActive="page">Channels</a>
+          <a routerLink="/history" routerLinkActive="active" ariaCurrentWhenActive="page">History</a>
         }
         @if (auth.role() === 'Admin') {
-          <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
-          <a routerLink="/admin/notifications" routerLinkActive="active">Deliveries</a>
-          <a routerLink="/admin/events" routerLinkActive="active">Events</a>
-          <a routerLink="/admin/sources" routerLinkActive="active">Sources</a>
-          <a routerLink="/admin/channel-types" routerLinkActive="active">Channel types</a>
+          <a routerLink="/admin" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
+          <a routerLink="/admin/notifications" routerLinkActive="active" ariaCurrentWhenActive="page">Deliveries</a>
+          <a routerLink="/admin/events" routerLinkActive="active" ariaCurrentWhenActive="page">Events</a>
+          <a routerLink="/admin/users" routerLinkActive="active" ariaCurrentWhenActive="page">Users</a>
+          <a routerLink="/admin/rules" routerLinkActive="active" ariaCurrentWhenActive="page">Rules</a>
+          <a routerLink="/admin/sources" routerLinkActive="active" ariaCurrentWhenActive="page">Sources</a>
+          <a routerLink="/admin/channel-types" routerLinkActive="active" ariaCurrentWhenActive="page">Channel types</a>
         }
       </nav>
       <span class="spacer"></span>

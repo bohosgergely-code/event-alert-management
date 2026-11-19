@@ -30,3 +30,21 @@ jobs:
       - run: npm ci
       - run: npm test -- --watch=false
       - run: npm run build
+
+  # The API describes itself, and the frontend's types are generated from that description.
+  # This fails if someone changes the API without regenerating, so the two cannot drift apart unnoticed.
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bash tools/export-openapi.sh
+      - run: npm run generate:api
+        working-directory: src/EventAlertManagement.Web
+      - run: git diff --exit-code -- docs/openapi.json src/EventAlertManagement.Web/src/app/core/api-schema.ts
+

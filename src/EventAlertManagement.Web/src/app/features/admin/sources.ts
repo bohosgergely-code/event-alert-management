@@ -16,7 +16,7 @@ import { Notice } from '../../shared/notice';
     @if (loading()) { <p class="muted">Loading…</p> }
     @else {
       <div class="scroll"><table>
-        <thead><tr><th>Source</th><th>Health</th><th>Last success</th><th>Problem</th><th>Check every</th><th></th></tr></thead>
+        <thead><tr><th scope="col">Source</th><th scope="col">Health</th><th scope="col">Last success</th><th scope="col">Problem</th><th scope="col">Check every</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
         <tbody>
           @for (s of sources(); track s.id) {
             <tr>

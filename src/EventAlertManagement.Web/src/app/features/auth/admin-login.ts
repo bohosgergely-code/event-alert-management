@@ -11,6 +11,7 @@ import { Notice } from '../../shared/notice';
   template: `
     <section class="card narrow">
       <h1>Administrator sign-in</h1>
+      @if (auth.notice()) { <p class="notice info" role="status">{{ auth.notice() }}</p> }
       <app-notice [errors]="errors()" />
       <form (ngSubmit)="submit()" class="stack">
         <div>
@@ -24,7 +25,7 @@ import { Notice } from '../../shared/notice';
   `,
 })
 export class AdminLogin {
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected key = '';
   protected readonly busy = signal(false);

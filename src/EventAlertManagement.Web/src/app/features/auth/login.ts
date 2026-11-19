@@ -12,6 +12,7 @@ import { Notice } from '../../shared/notice';
     <section class="card narrow">
       <h1>Sign in</h1>
       <p class="muted small">Enter your email address. If you are new, an account is created for you.</p>
+      @if (auth.notice()) { <p class="notice info" role="status">{{ auth.notice() }}</p> }
       <app-notice [errors]="errors()" />
       <form (ngSubmit)="submit()" class="stack">
         <div>
@@ -25,7 +26,7 @@ import { Notice } from '../../shared/notice';
   `,
 })
 export class Login {
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected email = '';
   protected readonly busy = signal(false);

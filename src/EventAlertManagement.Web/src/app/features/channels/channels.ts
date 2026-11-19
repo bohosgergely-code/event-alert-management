@@ -30,14 +30,17 @@ const FIELDS: Record<string, Field[]> = {
     @else if (channels().length === 0) { <div class="card empty">You have no channels yet. Add one below.</div> }
     @else {
       <div class="scroll"><table>
-        <thead><tr><th>Name</th><th>Type</th><th>Destination</th><th>Status</th><th>Last test</th><th></th></tr></thead>
+        <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Destination</th><th scope="col">Status</th><th scope="col">Last test</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
         <tbody>
           @for (c of channels(); track c.id) {
             <tr>
               <td>{{ c.name }}</td>
               <td>{{ c.type }}</td>
               <td class="mono">{{ c.settingsMasked }}</td>
-              <td><label class="check"><input type="checkbox" [checked]="c.isEnabled" (change)="toggle(c)" [attr.aria-label]="'Enabled: ' + c.name" /> {{ c.isEnabled ? 'On' : 'Paused' }}</label></td>
+              <td>
+                <span [class]="c.isEnabled ? 'badge Sent' : 'badge Disabled'">{{ c.isEnabled ? 'On' : 'Paused' }}</span>
+                <button type="button" class="link" (click)="toggle(c)" [disabled]="busy()" [attr.aria-label]="(c.isEnabled ? 'Pause ' : 'Resume ') + c.name">{{ c.isEnabled ? 'Pause' : 'Resume' }}</button>
+              </td>
               <td class="small">
                 @if (tests()[c.id]; as t) {
                   <span [class]="t.success ? 'badge Sent' : 'badge Failed'">{{ t.success ? 'Works' : 'Failed' }}</span>
@@ -47,12 +50,12 @@ const FIELDS: Record<string, Field[]> = {
                 } @else { <span class="muted">Never</span> }
               </td>
               <td style="white-space:nowrap">
-                <button type="button" (click)="test(c)" [disabled]="testing() === c.id">{{ testing() === c.id ? 'Sending…' : 'Send test' }}</button>
+                <button type="button" (click)="test(c)" [disabled]="testing() === c.id" [attr.aria-label]="'Send a test message to ' + c.name">{{ testing() === c.id ? 'Sending…' : 'Send test' }}</button>
                 @if (confirming() === c.id) {
                   <button type="button" class="danger" (click)="remove(c)">Yes, delete</button>
                   <button type="button" (click)="confirming.set('')">Cancel</button>
                 } @else {
-                  <button type="button" class="danger" (click)="confirming.set(c.id)">Delete</button>
+                  <button type="button" class="danger" (click)="confirming.set(c.id)" [attr.aria-label]="'Delete ' + c.name">Delete</button>
                 }
               </td>
             </tr>

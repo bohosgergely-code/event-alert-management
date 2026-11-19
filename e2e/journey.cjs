@@ -53,7 +53,7 @@ const log = (m) => console.log(`  ✓ ${m}`);
   log('signed in, empty rules screen shown');
 
   // ---- 3. channels ----
-  await page.getByRole('link', { name: 'Channels' }).click();
+  await page.getByRole('link', { name: 'Channels', exact: true }).click();
   await page.getByRole('heading', { name: 'Channels' }).waitFor();
   await page.getByLabel('Type').selectOption('Slack');
   await page.getByLabel('Name').fill('Evil webhook');
@@ -105,7 +105,7 @@ const log = (m) => console.log(`  ✓ ${m}`);
   await page.getByRole('button', { name: 'Add channel' }).click();
   await page.getByRole('cell', { name: 'Bounces', exact: true }).waitFor();
 
-  await page.locator('tbody tr').filter({ hasText: 'My inbox' }).getByRole('button', { name: 'Send test' }).click();
+  await page.locator('tbody tr').filter({ hasText: 'My inbox' }).getByRole('button', { name: /send a test message/i }).click();
   await page.locator('tbody tr').filter({ hasText: 'My inbox' }).getByText('Works').waitFor();
   await shot('channels');
   log('"Send test" delivers a real message and shows the result');
@@ -230,6 +230,20 @@ const log = (m) => console.log(`  ✓ ${m}`);
   await shot('admin-overview');
   log('sources and overview render');
 
+  // ---- admin can see who has what ----
+  await page.getByRole('link', { name: 'Users' }).click();
+  await page.getByRole('heading', { name: 'Users' }).waitFor();
+  const userRow = page.locator('tbody tr').filter({ hasText: email });
+  await userRow.waitFor();
+  assert.match(await text(userRow), /\b2\b.*\b3\b|\b3\b.*\b2\b/s, 'the user has 2 rules and 3 channels'); // 2 rules; email, bounce and webhook channels
+  await shot('admin-users');
+  await page.getByRole('link', { name: 'Rules', exact: true }).click();
+  const ruleRow = page.locator('tbody tr').filter({ hasText: 'Big quakes' }).filter({ hasText: email });
+  await ruleRow.waitFor();
+  assert.ok(!/Never/.test(await text(ruleRow)), 'the rule that produced an alert shows when');
+  await shot('admin-rules');
+  log('the admin sees every user and every rule, and when a rule last produced an alert');
+
   // ---- 10. what the user sees ----
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.waitForURL('**/admin/login');
@@ -237,7 +251,7 @@ const log = (m) => console.log(`  ✓ ${m}`);
   await page.getByLabel('Email address').fill(email.toUpperCase());
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.waitForURL('**/rules');
-  await page.getByRole('link', { name: 'History' }).click();
+  await page.getByRole('link', { name: 'History', exact: true }).click();
   await page.getByRole('cell', { name: new RegExp(`Sendai, Japan ${stamp}`) }).first().waitFor();
   const history = await text(page.locator('tbody').first());
   assert.match(history, /Sent/);
@@ -246,7 +260,25 @@ const log = (m) => console.log(`  ✓ ${m}`);
   await shot('history');
   log('the user sees sent and suppressed alerts, with the reason for the suppressed one');
 
+  // a rule whose only channel is paused says so
+  await page.getByRole('link', { name: 'Rules', exact: true }).click();
+  const bigRule = page.locator('tbody tr').filter({ hasText: 'Big quakes' });
+  await bigRule.waitFor();
+  assert.ok(!/Never/.test(await text(bigRule)), 'the rule shows when it last produced an alert');
+  assert.equal(await bigRule.getByText(/No active channel/).count(), 0, 'no warning while the channel works');
+  await page.getByRole('link', { name: 'Channels', exact: true }).click();
+  await page.getByRole('button', { name: 'Pause My inbox' }).click();
+  await page.locator('tbody tr').filter({ hasText: 'My inbox' }).locator('.badge', { hasText: 'Paused' }).waitFor();
+  await page.getByRole('link', { name: 'Rules', exact: true }).click();
+  await page.locator('tbody tr').filter({ hasText: 'Big quakes' }).getByText(/No active channel/).waitFor();
+  await shot('rule-without-usable-channel');
+  await page.getByRole('link', { name: 'Channels', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume My inbox' }).click();
+  await page.locator('tbody tr').filter({ hasText: 'My inbox' }).locator('.badge', { hasText: 'On' }).waitFor();
+  log('pausing the only channel of a rule shows a warning on the rules page, and resuming clears it');
+
   // session survives a reload, ends on sign-out
+  await page.getByRole('link', { name: 'History', exact: true }).click();
   await page.reload();
   await page.getByRole('heading', { name: 'History' }).waitFor();
   await page.getByRole('button', { name: 'Sign out' }).click();

@@ -16,6 +16,9 @@ import { Notice } from '../../shared/notice';
     <app-notice [errors]="errors()" />
 
     @if (loading()) { <p class="muted">Loading…</p> }
+    @else if (loadFailed()) {
+      <p><a routerLink="/rules">Back to your rules</a></p>
+    }
     @else {
       @if (!id() && presets().length > 0) {
         <section class="card">
@@ -53,6 +56,7 @@ import { Notice } from '../../shared/notice';
           @switch (m.category) {
             @case ('News') {
               <div><label for="inc">Mentions any of these words <span class="hint">(comma separated; leave empty for all news)</span></label>
+                <div class="small muted">A word matches anywhere in the text, so “war” also matches “software”. Longer words are safer.</div>
                 <input id="inc" name="inc" [(ngModel)]="m.includeKeywords" placeholder="evacuation, outbreak" /></div>
               <div><label for="exc">…but not these words</label>
                 <input id="exc" name="exc" [(ngModel)]="m.excludeKeywords" placeholder="sports, celebrity" /></div>
@@ -95,8 +99,8 @@ import { Notice } from '../../shared/notice';
           <div class="grow"><label class="check" style="margin-top:1.4rem"><input type="checkbox" name="enabled" [(ngModel)]="m.isEnabled" /> Rule is on</label></div>
         </div>
 
-        <div>
-          <label>Send alerts to</label>
+        <fieldset style="border:0; padding:0; margin:0">
+          <legend style="font-weight:600; font-size:.9rem; margin-bottom:.2rem">Send alerts to</legend>
           @if (channels().length === 0) {
             <p class="notice info">You have no channels yet. <a routerLink="/channels">Add a channel</a> first, then come back.</p>
           }
@@ -104,16 +108,20 @@ import { Notice } from '../../shared/notice';
             <label class="check"><input type="checkbox" [name]="'ch-' + c.id" [checked]="m.channelIds.includes(c.id)" (change)="toggleChannel(c.id)" />
               {{ c.name }} <span class="muted small">({{ c.type }}, {{ c.settingsMasked }})</span></label>
           }
-        </div>
+        </fieldset>
 
         <div class="row">
           <button type="submit" class="primary" [disabled]="busy()">{{ id() ? 'Save changes' : 'Create rule' }}</button>
           <button type="button" (click)="preview()" [disabled]="busy()">Preview matches</button>
-          <a routerLink="/rules"><button type="button">Cancel</button></a>
+          <button type="button" routerLink="/rules">Cancel</button>
         </div>
       </form>
 
+      @if (result() && !previewIsCurrent()) {
+        <p class="notice info small" role="status">You changed the rule after the last preview. Preview again to see how many events it would match.</p>
+      }
       @if (result(); as r) {
+        @if (previewIsCurrent()) {
         <section class="card" aria-live="polite">
           <h2 style="margin-top:0">Preview</h2>
           <p>Of the last <b>{{ r.eventsChecked }}</b> {{ nouns[m.category] }} from the past week, <b>{{ r.matches }}</b> would have triggered this rule.</p>
@@ -123,6 +131,7 @@ import { Notice } from '../../shared/notice';
             </ul>
           }
         </section>
+        }
       }
     }
   `,
@@ -143,6 +152,9 @@ export class RuleEditor implements OnInit {
   protected readonly presets = signal<Preset[]>([]);
   protected readonly result = signal<Preview | null>(null);
   protected readonly loading = signal(true);
+  protected readonly loadFailed = signal(false);
+  /** What the shown preview was computed from. A preview of an earlier version of the form must not be shown as if it were current. */
+  private previewOf = '';
   protected readonly busy = signal(false);
   protected readonly errors = signal<string[]>([]);
 
@@ -152,13 +164,15 @@ export class RuleEditor implements OnInit {
     if (id) {
       this.api.rule(id).subscribe({
         next: (r) => { this.m = fromRule(r); this.loading.set(false); this.cdr.markForCheck(); },
-        error: (e: unknown) => { this.errors.set(describeError(e)); this.loading.set(false); },
+        error: (e: unknown) => { this.errors.set(describeError(e)); this.loadFailed.set(true); this.loading.set(false); },
       });
     } else {
       this.api.presets().subscribe({ next: (p) => this.presets.set(p) });
       this.loading.set(false);
     }
   }
+
+  protected previewIsCurrent(): boolean { return this.result() !== null && this.previewOf === JSON.stringify(toRequest(this.m)); }
 
   protected usePreset(name: string): void {
     const p = this.presets().find((x) => x.name === name);
@@ -174,7 +188,7 @@ export class RuleEditor implements OnInit {
     if (problems.length > 0) { this.errors.set(problems); return; }
     this.begin();
     this.api.previewRule(toRequest(this.m)).subscribe({
-      next: (r) => { this.result.set(r); this.busy.set(false); },
+      next: (r) => { this.previewOf = JSON.stringify(toRequest(this.m)); this.result.set(r); this.busy.set(false); },
       error: (e: unknown) => this.fail(e),
     });
   }

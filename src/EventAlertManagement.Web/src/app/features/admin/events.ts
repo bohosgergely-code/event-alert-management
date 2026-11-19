@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
@@ -6,6 +6,7 @@ import { CATEGORIES, Category, EventSummary, InjectResult } from '../../core/mod
 import { describeError } from '../../core/errors';
 import { Notice } from '../../shared/notice';
 import { Pager } from '../../shared/pager';
+import { PagedLoader } from '../../shared/paged-loader';
 
 @Component({
   selector: 'app-admin-events',
@@ -52,24 +53,24 @@ import { Pager } from '../../shared/pager';
     <h2>Stored events</h2>
     <div class="row" style="margin-bottom:1rem">
       <div><label for="fc">Category</label>
-        <select id="fc" name="fc" [(ngModel)]="category" (ngModelChange)="load(1)"><option value="">All</option>@for (c of categories; track c) { <option [value]="c">{{ c }}</option> }</select></div>
+        <select id="fc" name="fc" [(ngModel)]="category" (ngModelChange)="list.load(1)"><option value="">All</option>@for (c of categories; track c) { <option [value]="c">{{ c }}</option> }</select></div>
       <div><label for="fs">Origin</label>
-        <select id="fs" name="fs" [(ngModel)]="simulated" (ngModelChange)="load(1)"><option value="">All</option><option value="false">Real sources</option><option value="true">Simulated</option></select></div>
+        <select id="fs" name="fs" [(ngModel)]="simulated" (ngModelChange)="list.load(1)"><option value="">All</option><option value="false">Real sources</option><option value="true">Simulated</option></select></div>
     </div>
-    <app-notice [errors]="errors()" />
-    @if (loading()) { <p class="muted">Loading…</p> }
-    @else if (items().length === 0) { <div class="card empty">No events.</div> }
+    <app-notice [errors]="list.errors()" />
+    @if (list.loading()) { <p class="muted">Loading…</p> }
+    @else if (list.items().length === 0) { <div class="card empty">No events.</div> }
     @else {
       <div class="scroll"><table>
-        <thead><tr><th>Occurred</th><th>Category</th><th>Sev.</th><th>Title</th><th>Source</th></tr></thead>
-        <tbody>@for (e of items(); track e.id) {
+        <thead><tr><th scope="col">Occurred</th><th scope="col">Category</th><th scope="col">Sev.</th><th scope="col">Title</th><th scope="col">Source</th></tr></thead>
+        <tbody>@for (e of list.items(); track e.id) {
           <tr><td class="small">{{ e.occurredAt | date: 'medium' }}</td><td>{{ e.category }}</td><td>{{ e.severity }}</td>
             <td>{{ e.title }}@if (e.location) { <div class="small muted">{{ e.location }}</div> }</td>
             <td>{{ e.sourceKey }} @if (e.isSimulated) { <span class="badge Pending">simulated</span> }</td></tr>
         }</tbody>
       </table></div>
-      <app-pager [page]="page()" [pageSize]="20" [total]="total()" (go)="load($event)" />
     }
+    <app-pager [page]="list.page()" [pageSize]="list.pageSize()" [total]="list.total()" (go)="list.load($event)" />
   `,
 })
 export class AdminEvents implements OnInit {
@@ -79,25 +80,14 @@ export class AdminEvents implements OnInit {
   protected simulated: '' | 'true' | 'false' = '';
   protected f = { category: 'Disasters' as Category, severity: 3, title: '', summary: '', location: '', url: '', magnitude: null as number | null, eventType: '', ticker: '', changePercent: null as number | null };
 
-  protected readonly items = signal<EventSummary[]>([]);
-  protected readonly page = signal(1);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(true);
-  protected readonly errors = signal<string[]>([]);
+  protected readonly list = new PagedLoader<EventSummary>(
+    (page) => this.api.adminEvents({ category: this.category, simulated: this.simulated, page }), inject(DestroyRef));
   protected readonly injectErrors = signal<string[]>([]);
   protected readonly injected = signal<InjectResult | null>(null);
   protected readonly injectedTitle = signal('');
   protected readonly injecting = signal(false);
 
-  ngOnInit(): void { this.load(1); }
-
-  protected load(page: number): void {
-    this.loading.set(true);
-    this.api.adminEvents({ category: this.category, simulated: this.simulated, page }).subscribe({
-      next: (r) => { this.items.set(r.items); this.page.set(r.page); this.total.set(r.total); this.loading.set(false); },
-      error: (e: unknown) => { this.errors.set(describeError(e)); this.loading.set(false); },
-    });
-  }
+  ngOnInit(): void { this.list.load(1); }
 
   protected inject(): void {
     this.injecting.set(true); this.injectErrors.set([]); this.injected.set(null);
@@ -108,7 +98,7 @@ export class AdminEvents implements OnInit {
       magnitude: f.category === 'Disasters' ? f.magnitude : null, eventType: f.category === 'Disasters' ? f.eventType || null : null,
       ticker: f.category === 'Markets' ? f.ticker || null : null, changePercent: f.category === 'Markets' ? f.changePercent : null,
     }).subscribe({
-      next: (r) => { this.injectedTitle.set(f.title.trim()); this.injected.set(r); this.injecting.set(false); this.f.title = ''; this.load(1); },
+      next: (r) => { this.injectedTitle.set(f.title.trim()); this.injected.set(r); this.injecting.set(false); this.f.title = ''; this.list.load(1); },
       error: (e: unknown) => { this.injectErrors.set(describeError(e)); this.injecting.set(false); },
     });
   }

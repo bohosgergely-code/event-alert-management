@@ -17,7 +17,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(outgoing).pipe(
     catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse && error.status === 401 && isApi && !isSignIn(req.url)) auth.logout();
+      if (error instanceof HttpErrorResponse && error.status === 401 && isApi && !isSignIn(req.url)) auth.logout(true, 'Your session has ended. Please sign in again.');
       return throwError(() => error);
     }),
   );

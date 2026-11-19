@@ -1,12 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { Notification, NotificationStatus, STATUSES } from '../../core/models';
-import { describeError } from '../../core/errors';
 import { Notice } from '../../shared/notice';
 import { Pager } from '../../shared/pager';
-import { autoRefresh } from '../../shared/auto-refresh';
+import { PagedLoader } from '../../shared/paged-loader';
 
 @Component({
   selector: 'app-history',
@@ -17,21 +16,21 @@ import { autoRefresh } from '../../shared/auto-refresh';
     <div class="row" style="margin-bottom:1rem">
       <div>
         <label for="status">Show</label>
-        <select id="status" name="status" [(ngModel)]="status" (ngModelChange)="load(1)">
+        <select id="status" name="status" [(ngModel)]="status" (ngModelChange)="list.load(1)">
           <option value="">All</option>
           @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
         </select>
       </div>
     </div>
-    <app-notice [errors]="errors()" />
+    <app-notice [errors]="list.errors()" />
 
-    @if (loading()) { <p class="muted">Loading…</p> }
-    @else if (items().length === 0) { <div class="card empty">Nothing here yet. Alerts appear once an event matches one of your rules.</div> }
+    @if (list.loading()) { <p class="muted">Loading…</p> }
+    @else if (list.items().length === 0) { <div class="card empty">Nothing here yet. Alerts appear once an event matches one of your rules.</div> }
     @else {
       <div class="scroll"><table>
-        <thead><tr><th>When</th><th>Event</th><th>Rule</th><th>Sent to</th><th>Status</th></tr></thead>
+        <thead><tr><th scope="col">When</th><th scope="col">Event</th><th scope="col">Rule</th><th scope="col">Sent to</th><th scope="col">Status</th></tr></thead>
         <tbody>
-          @for (n of items(); track n.id) {
+          @for (n of list.items(); track n.id) {
             <tr>
               <td class="small">{{ n.createdAt | date: 'medium' }}</td>
               <td>{{ n.eventTitle }}<div class="small muted">Severity {{ n.eventSeverity }}</div></td>
@@ -47,30 +46,16 @@ import { autoRefresh } from '../../shared/auto-refresh';
           }
         </tbody>
       </table></div>
-      <app-pager [page]="page()" [pageSize]="pageSize()" [total]="total()" (go)="load($event)" />
     }
+    <app-pager [page]="list.page()" [pageSize]="list.pageSize()" [total]="list.total()" (go)="list.load($event)" />
   `,
 })
 export class History implements OnInit {
   private readonly api = inject(ApiService);
   protected readonly statuses = STATUSES;
   protected status: NotificationStatus | '' = '';
-  protected readonly items = signal<Notification[]>([]);
-  protected readonly page = signal(1);
-  protected readonly pageSize = signal(20);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(true);
-  protected readonly errors = signal<string[]>([]);
+  protected readonly list = new PagedLoader<Notification>(
+    (page, pageSize) => this.api.notifications(this.status, page, pageSize), inject(DestroyRef), 10_000);
 
-  constructor() { autoRefresh(() => this.load(this.page(), true), 10000); }
-
-  ngOnInit(): void { this.load(1); }
-
-  protected load(page: number, quiet = false): void {
-    if (!quiet) { this.loading.set(true); this.errors.set([]); }
-    this.api.notifications(this.status, page, this.pageSize()).subscribe({
-      next: (r) => { this.items.set(r.items); this.page.set(r.page); this.pageSize.set(r.pageSize); this.total.set(r.total); this.loading.set(false); },
-      error: (e: unknown) => { if (!quiet) this.errors.set(describeError(e)); this.loading.set(false); },
-    });
-  }
+  ngOnInit(): void { this.list.load(1); }
 }
