@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
         // Channels: adding one means one class and one line here.
         services.AddSingleton<IEmailTransport, MailKitEmailTransport>();
         services.AddHttpClient(SlackChannel.HttpClientName)
+            .RemoveAllLoggers() // a Slack webhook address is itself the secret, and the default logging would print it on every send
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10));
         services.AddSingleton<INotificationChannel, EmailChannel>();

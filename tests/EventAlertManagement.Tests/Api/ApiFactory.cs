@@ -53,6 +53,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     /// <summary>A separate instance with different configuration (rate limit, missing keys, ...).</summary>
     public static ApiFactory With(Dictionary<string, string?> config) => new(config);
 
+    /// <summary>A separate instance whose services can be adjusted by the test (capturing logs, stubbing the outside world).</summary>
+    public static ApiFactory WithServices(Action<IServiceCollection> customize) => new(null) { _customize = customize };
+
+    private Action<IServiceCollection>? _customize;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -75,6 +80,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailTransport>();
             services.AddSingleton<IEmailTransport>(Email);
             services.AddSingleton<INotificationChannel>(Fake);
+            _customize?.Invoke(services);
         });
     }
 

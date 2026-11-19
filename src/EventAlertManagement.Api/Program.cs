@@ -19,6 +19,8 @@ builder.Services.AddOptions<AuthOptions>()
     .Bind(builder.Configuration.GetSection(AuthOptions.Section))
     .Validate(o => o.SigningKey.Length >= 32,
         "Auth:SigningKey must be set to a secret of at least 32 characters (use user secrets or an environment variable).")
+    .Validate(o => o.AdminKey.Length == 0 || o.AdminKey.Length >= 12,
+        "Auth:AdminKey must be at least 12 characters (32 or more is recommended), or empty to switch admin sign-in off.")
     .ValidateOnStart();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 
@@ -48,6 +50,12 @@ builder.Services.AddAuthorization(o =>
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Test messages go to destinations the user typed, possibly third parties: a small budget per signed-in user,
+    // across all of their channels.
+    o.AddPolicy("test", http => RateLimitPartition.GetFixedWindowLimiter(
+        http.User.FindFirst("sub")?.Value ?? http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 6, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     o.AddPolicy("auth", http =>
     {
         var limit = http.RequestServices.GetRequiredService<IOptions<AuthOptions>>().Value.LoginAttemptsPerMinute;
@@ -108,9 +116,18 @@ if (app.Environment.IsDevelopment())
 }
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing")) app.UseHttpsRedirection();
 
+// Nothing here needs a big request body. Refusing early keeps one caller from making the server read and parse megabytes.
+const long MaxRequestBytes = 256 * 1024;
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.ContentLength > MaxRequestBytes) { ctx.Response.StatusCode = StatusCodes.Status413PayloadTooLarge; return; }
+    if (ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit) limit.MaxRequestBodySize = MaxRequestBytes;
+    await next();
+});
+
 app.UseCors("web");
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();   // after authentication, so the per-user policy sees who is calling
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

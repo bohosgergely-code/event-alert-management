@@ -112,13 +112,21 @@ public class ChannelsController(
 
     /// <summary>Sends one real test message through the channel and reports the real result.</summary>
     [HttpPost("{id:guid}/test")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("test")]
     public async Task<ActionResult<TestResultResponse>> Test(Guid id, CancellationToken ct)
     {
         var entity = await Own(id, ct);
         if (entity is null) return NotFound();
 
+        // Claim the right to test with ONE atomic update. Reading the time first and writing it after the send let
+        // parallel requests all pass the check, so one user could make the server send many messages to a third party.
         var now = clock.UtcNow;
-        if (entity.LastTestedAt is { } last && now - last < TimeSpan.FromSeconds(10))
+        var cutoff = now.AddSeconds(-10);
+        var uid = User.UserId();
+        var claimed = await db.ChannelConfigs
+            .Where(c => c.Id == id && c.UserId == uid && (c.LastTestedAt == null || c.LastTestedAt <= cutoff))
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.LastTestedAt, now), ct);
+        if (claimed == 0)
             return StatusCode(429, new ProblemDetails { Title = "Please wait a few seconds between tests.", Status = 429 });
 
         var channel = registry.Find(entity.Type);
@@ -142,9 +150,7 @@ public class ChannelsController(
         }
 
         var error = result.Outcome == ChannelSendOutcome.Success ? null : ErrorSanitizer.Sanitize(result.Error);
-        entity.LastTestedAt = now;
-        entity.LastTestResult = error is null ? "OK" : error;
-        await db.SaveChangesAsync(ct);
+        await db.ChannelConfigs.Where(c => c.Id == id).ExecuteUpdateAsync(s => s.SetProperty(c => c.LastTestResult, error ?? "OK"), ct);
         return new TestResultResponse(result.Outcome == ChannelSendOutcome.Success, result.Outcome.ToString(), error);
     }
 

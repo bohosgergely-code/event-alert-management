@@ -98,9 +98,12 @@ public sealed class EmailChannel(IEmailTransport transport, IOptions<SmtpOptions
         return mime;
     }
 
-    /// <summary>Only http and https links are ever rendered (blocks javascript: and similar).</summary>
+    /// <summary>
+    /// Only http and https links are ever rendered (blocks javascript: and similar), and never one with a user name or
+    /// password in it: "https://trusted.example@evil.example/" would show the trusted name and go to the other site.
+    /// </summary>
     internal static string? SafeLink(string? url) =>
-        Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" ? uri.AbsoluteUri : null;
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" && string.IsNullOrEmpty(uri.UserInfo) ? uri.AbsoluteUri : null;
 
     internal static string OneLine(string? value, int max)
     {

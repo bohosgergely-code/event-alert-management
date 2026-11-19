@@ -133,12 +133,19 @@ public sealed class WebhookChannel(IHttpClientFactory httpFactory, IClock clock)
         if (!string.IsNullOrEmpty(uri.UserInfo)) { reason = "The webhook URL must not contain a user name or password."; return false; }
 
         // Uri turns forms such as http://2130706433, 0x7f.1 or 127.1 into the real address, so the check sees what would be contacted.
-        if (uri.HostNameType is UriHostNameType.IPv4 or UriHostNameType.IPv6)
+        // Other spellings (a trailing dot, full-width or circled digits, ideographic full stops) are folded to plain text first.
+        // This is only the first line of defence; the connection guard decides on the address that is really used.
+        var spellings = new[] { uri.IdnHost, uri.Host, uri.DnsSafeHost }
+            .Select(h => h.Normalize(System.Text.NormalizationForm.FormKC).Replace('\u3002', '.').Replace('\uFF0E', '.').Replace('\uFF61', '.').Trim('[', ']').TrimEnd('.'))
+            .Distinct().ToList();
+        var literal = spellings.Select(h => IPAddress.TryParse(h, out var parsed) ? parsed : null).Where(a => a is not null).ToList();
+        if (literal.Count > 0)
         {
-            if (!IPAddress.TryParse(uri.Host.Trim('[', ']'), out var ip) || !PublicAddressPolicy.IsPublic(ip))
-            { reason = "The webhook URL points to a private or internal address."; return false; }
+            if (literal.Any(a => !PublicAddressPolicy.IsPublic(a!))) { reason = "The webhook URL points to a private or internal address."; return false; }
             return true;
         }
+        // A name whose last part is a number is never a real public domain. It is an attempt to spell an address.
+        if (spellings.Any(h => h.Split('.')[^1].All(char.IsDigit))) { reason = "The webhook URL does not look like a valid address."; return false; }
 
         var host = uri.IdnHost.TrimEnd('.').ToLowerInvariant();
         var internalName = !host.Contains('.') || host == "localhost" || host.EndsWith(".localhost") || host.EndsWith(".local")
@@ -178,6 +185,7 @@ public static class WebhookChannelRegistration
     {
         services.Configure<WebhookOptions>(config.GetSection("Webhook"));
         services.AddHttpClient(WebhookChannel.HttpClientName)
+            .RemoveAllLoggers() // the default request logging writes the full address, which contains secrets, at Information level
             .ConfigurePrimaryHttpMessageHandler(sp => CreateHandler(sp.GetRequiredService<IOptions<WebhookOptions>>().Value))
             .ConfigureHttpClient((sp, c) => c.Timeout = TimeSpan.FromSeconds(Math.Clamp(sp.GetRequiredService<IOptions<WebhookOptions>>().Value.TimeoutSeconds, 2, 60)));
         services.AddSingleton<INotificationChannel, WebhookChannel>();

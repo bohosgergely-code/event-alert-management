@@ -32,7 +32,7 @@ public sealed class SlackChannel(IHttpClientFactory httpFactory) : INotification
         var url = Parse(settingsJson)?.WebhookUrl;
         return string.IsNullOrWhiteSpace(url) || !IsAllowedWebhook(url)
             ? "(not set)"
-            : $"https://hooks.slack.com/services/…{url[^4..]}";
+            : "https://hooks.slack.com/services/… (hidden)";
     }
 
     public async Task<ChannelSendResult> SendAsync(NotificationMessage message, string settingsJson, CancellationToken ct)
